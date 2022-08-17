@@ -88,3 +88,6 @@ option best fit for you.
    ![Resulting JSON](screenshots/URL.png)
 5. Put the URL in a file called ```url```. Be sure there is no file extensions, especially if you are running Windows. This file sould be in the same directory as the other Python files.
 6. You are ready to go! Run the ```manager.sh``` script and see your weather data!
+
+# License
+This program is under the GNU General Public License v3. Be sure to check out the [LICENSE file](LICENSE) for more info.

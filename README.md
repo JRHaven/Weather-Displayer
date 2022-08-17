@@ -33,11 +33,17 @@ Shell script to execute everything as needed. You can also quit the script from 
 ## Installation
 
 ### Windows
-First off, this script was designed for use on Linux, specifically for the Raspberry Pi. If you wish to run it on Windows, you can clone this repo and build your own batch script. Just make sure the getter script is executed first,in a seperate thread.
-You will also need to download Python 3 if you haven't already. Head over to [the Python Project's Website](https://www.python.org/) and download the latest version of Python 3.
+First off, this script was designed for use on Linux, specifically for the Raspberry Pi. If you wish to run it on Windows, you can clone this repo and 
+build your own batch script. Just make sure the getter script is executed first, in a seperate thread.
+
+You will then need to download Python 3 if you haven't already. Head over to [the Python Project's Website](https://www.python.org/) and download the 
+latest version of Python 3. 
+
+After this, you need to download a program called "cowsay". After downloading Python, you can do this from the Pip package manager. After ensuring Pip is 
+in your PATH environment variable, you can run ```pip install cowsay``` in an **Administrative** command line.
 
 ### MacOS
-I am not familiar with MacOS, nor do I have a Mac to test this on. Basically install Python and download the project.
+I am not familiar with MacOS, nor do I have a Mac to test this on. Basically install Python and Cowsay, then download the project.
 
 ### Linux
 Not much setup should be needed on Linux, the vast majority of distros already have Python installed. But if you don't, run:
@@ -49,6 +55,16 @@ Ubuntu: ```sudo apt install python3```
 Red Hat/Fedora: ```sudo dnf install python3```
 
 Arch (as root): ```pacman -S python```
+
+
+
+You will also need to install a program called "cowsay". This most likely isn't installed on your distribution.
+
+Debian/Ubuntu: ```sudo apt install cowsay```
+
+Red Hat/Fedora: ```sudo dnf install cowsay```
+
+Arch (as root): ```pacman -S cowsay```
 
 From here, simply clone this repository, either with the above "Code" drop-down or with ```git clone "https://github.com/JR-Tech-and-Software/Weather-Displayer/Weather-Displayer.git"```
 
@@ -70,5 +86,5 @@ option best fit for you.
    ![Needed URL](screenshots/forecast_url_visible.png)
    3. This is the URL we need to give the program. Open this URL up in a new tab to ensure it works. You should see something similar to me here:
    ![Resulting JSON](screenshots/URL.png)
-5. Put the URL in a file called ```url``. Be sure there is no file extensions, especially if you are running Windows. This file sould be in the same directory as the other Python files.
+5. Put the URL in a file called ```url```. Be sure there is no file extensions, especially if you are running Windows. This file sould be in the same directory as the other Python files.
 6. You are ready to go! Run the ```manager.sh``` script and see your weather data!

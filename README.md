@@ -53,24 +53,22 @@ Arch (as root): ```pacman -S python```
 From here, simply clone this repository, either with the above "Code" drop-down or with ```git clone "https://github.com/JR-Tech-and-Software/Weather-Displayer/Weather-Displayer.git"```
 
 ### All
-After Python is installed and the project has been downloaded, you will need to tell the script the URL to get your local weather data. It can take multiple steps to do this.
+After Python is installed and the project has been downloaded, you will need to tell the script the URL to get your local weather data. It can take 
+multiple steps to do this. I'll be using Chicago, IL as my example here.
 
 1. Head to [the National Weather Service's Webpage](https://www.weather.gov/)
-2. Click on your location on the website's big map (I'll use Chicago as an example.)
-![NWS Map](screenshots/big_nws_map.png)
-3. In the URL bar of this webpage, you should see the code of your local NWS site. In my case, it's ```lot```. Take note of this, you'll need it later.
-![NWS Local Map](screenshots/small_nws_chicago.png)
-4. Click on your more precise location.
-5. Not too far nn the URL bar, you should see ```?x=``` and ```?y=```. These are your X and Y coordinates, once again take note of these. In my example, my X coordinate is 244, my Y coordinate is 100.
-![NWS Chicago Webpage](screenshots/nws_chicago.png)
-6. Now you can create your URL. You can test this out in your browser. Type ```api.weather.gov/gridpoints/```. Enter in your NWS Code found in step 3, but capitalized. Ex. ```lot``` would become ```LOT```.
-   - Now type a ```/```, followed by your X and Y coordinates from step 5, sperated by a comma. So far we have ```api.weather.gov/gridpoints/LOT/244,100```
-   - Lastly, type ```/forecast```. Go to this URL, you should see a long page of JSON data.
-7. Copy this URL and put it in a file called "url". Be sure that this file doesn't have a file extension, especially if you are doing this in Windows.
-8. Startup the application by executing ```manager.sh``` or your equivelent. If there are no errors, you are good to go
-
-#### Issues
-![JSON of 500 Error](screenshots/problem.png)
-
-When you go to the URL in Step 6, you may run into an issue where you get an unexpected error, with the status of 500. This can happen from time to time,
-this is an issue with NWS. Wait around 10 minutes and refresh the page, it should bring up your weather data. Keep doing this every so often if you get the same 500 error.
+2. In the local forecast search box at the top, type in your city and state abbreviation, seperated by a comma. A drop down will come up, click the 
+option best fit for you.
+![weather.gov banner](screenshots/search_banner.png)
+3. In the URL bar, you should see Latitude and Longitude values for your city. Copy these somewhere, we'll need them later.
+![Local weather NWS site w/Lat and Long data](screenshots/nws_chicago.png)
+4. You can now use this data to find your NWS API URL. This within itself will take a few steps.
+   1. You will need to assemble a URL with your Latitude and Longitude. The format will be like this: ```https://api.weather.gov/points/<LAT>,<LONG>```.
+   In my example, it is ```https://api.weather.gov/points/41.8843,-87.6325```
+   ![Example URL](screenshots/end_result.png)
+   2. Go to this URL and find the "forecast" element in the JSON. This contains the URL we ultimately need. In my example, that URL is ```https://api.weather.gov/gridpoints/LOT/74,72/forecast```
+   ![Needed URL](screenshots/forecast_url_visible.png)
+   3. This is the URL we need to give the program. Open this URL up in a new tab to ensure it works. You should see something similar to me here:
+   ![Resulting JSON](screenshots/URL.png)
+5. Put the URL in a file called ```url``. Be sure there is no file extensions, especially if you are running Windows. This file sould be in the same directory as the other Python files.
+6. You are ready to go! Run the ```manager.sh``` script and see your weather data!

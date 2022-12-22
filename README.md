@@ -68,6 +68,8 @@ Arch (as root): ```pacman -S cowsay```
 
 From here, simply clone this repository, either with the above "Code" drop-down or with ```git clone "https://github.com/JR-Tech-and-Software/Weather-Displayer/Weather-Displayer.git"```
 
+Once downloaded, you will need to be sure all scripts are marked as executable. You can do this either through a graphical file manager or run the commands `chmod 755 manager.sh` and `chmod 755 *.py`.
+
 ### All
 After Python is installed and the project has been downloaded, you will need to tell the script the URL to get your local weather data. It can take 
 multiple steps to do this. I'll be using Chicago, IL as my example here.

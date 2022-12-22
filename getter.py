@@ -69,6 +69,9 @@ def main():
             comms.write("")
         return 1
 
+    if(dest[len(dest)-1] == "\n"):
+        dest = dest[:-1]
+
     while(True):
         # Use this variable to find out if we failed to download data or not
         fail = False

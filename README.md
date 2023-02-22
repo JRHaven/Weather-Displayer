@@ -48,9 +48,7 @@ I am not familiar with MacOS, nor do I have a Mac to test this on. Basically ins
 ### Linux
 Not much setup should be needed on Linux, the vast majority of distros already have Python installed. But if you don't, run:
 
-Debian: ```sudo apt install python```
-
-Ubuntu: ```sudo apt install python3```
+Debian/Ubuntu: ```sudo apt install python3```
 
 Red Hat/Fedora: ```sudo dnf install python3```
 

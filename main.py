@@ -18,16 +18,195 @@ Weather-Displayer. If not, see <https://www.gnu.org/licenses/>.
 '''
 
 from time import sleep
-import json, os, sys, math, time
+import json, os, sys, math, time, threading, urllib.request, socket, web
 
 # We're going to need to create a start-time variable to calculate uptime for logging purposes
 startTime = time.time()
 
+# Create a seperate return code variable for getter
+"""
+
+  Codes and Meanings
+ -=-=-=-=-=-=-=-=-=-=
+
+0: Waiting
+1: No URL File, this will quit the getter
+2: Cannot retrieve general weather JSON data, this will quit the getter
+3: Cannot retrieve hourly weather JSON data, this will quit the getter
+4: The date on the JSON timestamp does not match today's date. This is not a critical error; will not quit the getter.
+5: New JSON!
+
+"""
+getterCode = 0
+getterRun = 1
+
 # Function to write to log file
-def log(msg):
+def log(thread, msg):
     logFile = open("log", "a")
-    logFile.write("MAIN.PY   [" + str(f"{(time.time() - startTime):f}") + " - " + time.strftime("%m %d %H:%M:%S", time.localtime()) + "]: " + str(msg) + "\n")
+    logFile.write(thread + "   [" + str(f"{(time.time() - startTime):f}") + " - " + time.strftime("%m %d %H:%M:%S", time.localtime()) + "]: " + str(msg) + "\n")
     logFile.close()
+
+    # Permissions! This is probably going to be run as sudo.
+    os.chmod("log", 0o777)
+
+def getter():
+    global getterCode
+    myName = "GETTER"
+    # Report to log that script has been started
+    log(myName, "JSON Getter Started.")
+
+    # Lets us know if it is our first run
+    begin = True
+
+    # We need to load in our NWS info provided by the user in a file. If it doesn't exist, tell the user
+    # to get the correct url and provide it in the file
+    log(myName, "Locating URL File...")
+    if(os.path.exists("url")):
+        log(myName, "...Exists! Loading NWS URL")
+        with open("url", "r") as destFile:
+            dest = destFile.read()
+    else:
+        # The file doesn't exist. Log this occasion and tell main.py to inform and quit
+        log(myName, "ERROR: URL File doesn't exist! Informing and Quitting!")
+        getterCode = 1
+        exit(0)
+
+    if(dest[len(dest)-1] == "\n"):
+        dest = dest[:-1]
+
+    while(True):
+        # Use this variable to find out if we failed to download data or not
+        fail = False
+
+        log(myName, "Attempting to retrieve JSON from NWS API...")
+
+        # Loop to continue trying to download things in case we get a 500 error
+        while(True):
+            try:
+                with urllib.request.urlopen(dest) as url:
+                    data = json.loads(url.read().decode())
+                if(dest[len(dest)-1] == "/"):
+                    with urllib.request.urlopen(dest + "hourly") as url:
+                        hourData = json.loads(url.read().decode())
+                else:
+                    with urllib.request.urlopen(dest + "/hourly") as url:
+                        hourData = json.loads(url.read().decode())
+                
+                log(myName, "JSON Data Successfully Retrieved.")
+                hourGenDate = str(hourData["properties"]["generatedAt"])
+                longGenDate = str(data["properties"]["generatedAt"])
+                today = time.strftime("%Y-%m-%d", time.gmtime())
+                log(myName, "NWS Provided long-term JSON on " + str(data["properties"]["generatedAt"]))
+                log(myName, "NWS Provided hourly JSON on " + str(hourData["properties"]["generatedAt"]))
+
+                if(today not in longGenDate):
+                    fail = True
+                    log(myName, "ERROR! The NWS provided out of date information for some reason. Waiting some time, then trying again...")
+                    # If this is our first time running this script, we should find something to display.
+                    # If there is a backup, use that. If not, inform the main script.
+                    if((os.path.exists("hourWeatherCache-bk.json") == True) and (os.path.exists("weatherCache-bk.json") == True)):
+                        os.rename("hourWeatherCache-bk.json", "hourWeatherCache.json")
+                        os.rename("weatherCache-bk.json", "weatherCache.json")
+                    else:
+                        getterCode = 4
+                        
+                    sleep(300)
+                    getterCode = 0
+                    continue
+                else:
+                    fail = False
+                
+                if(fail == False):
+                    with open("weatherCache.json", "w") as dumpFile:
+                        json.dump(data, dumpFile)
+                        dumpFile.close()
+                        log(myName, "Dumping long-term JSON to file, weatherCache.json")
+
+                        # Permissions! This is probably going to be run as sudo.
+                        log(myName, "Granting full permission to weatherCache.json...")
+                        os.chmod("weatherCache.json", 0o777)
+                
+                    with open("hourWeatherCache.json", "w") as hourDumbFile:
+                        json.dump(hourData, hourDumbFile)
+                        dumpFile.close()
+                        log(myName, "Dumping hourly JSON to file, hourWeatherCache.json")
+
+                        # Permissions! This is probably going to be run as sudo.
+                        log(myName, "Granting full permission to hourWeatherCache.json...")
+                        os.chmod("hourWeatherCache.json", 0o777)
+                break
+                # If there was an error while doing this, void it.
+                #if(os.path.exists("late-error") == True):
+                #    os.remove("late-error")
+            except urllib.error.HTTPError as e:
+                # We've gotten a 500 error. This goes away after a second or so, so let's try again
+                # Report to log
+                log(myName, "HTML Error, probably a 500 error. Trying again. The next few lines is the error info.")
+                log(myName, str(e))
+                sleep(1)
+            # This error occurs if there it cannot resolve the URL, meaning no internet access
+            # If there is backup info (which there should be), rename it so that it is avalible
+            # to be used
+            except urllib.error.URLError as e:
+                # Report to the log
+                log(myName, "URL Error. Could be for a multitude of reasons. The next few lines are error info.")
+                log(myName, str(e))
+                fail = True
+                print("Could not connect to the NWS to download new data.")
+                print("Making backups avalible...")
+                if(os.path.exists("weatherCache-bk.json") == True):
+                    os.rename("weatherCache-bk.json", "weatherCache.json")
+                    log(myName, "Got temporary long-term info from a backup.")
+                else:
+                    if(os.path.exists("weatherCache.json") == False):
+                        print("Oops! There's no data to use! Quit this program, check the internet connection, and try again! Exiting...")
+                        log(myName, "CRITICAL ERROR! No long-term backup info to display! Quitting, there is nothing to do!")
+                        getterCode = 2
+                        exit(0)
+                    else:
+                        log(myName, "Long-Term backups were avalible, using those. Nothing to do now until next cycle.")
+                        print("Backups for one weather script is already avalible. There is nothing to do.")
+                
+                if(os.path.exists("hourWeatherCache-bk.json") == True):
+                    os.rename("hourWeatherCache-bk.json", "hourWeatherCache.json")
+                    log(myName, "Got temporary hourly info from a backup.")
+                else:
+                    if(os.path.exists("hourWeatherCache.json") == False):
+                        print("Oops! There's no data to use! Quit this program, check the internet connection, and try again! Exiting...")
+                        log(myName, "CRITICAL ERROR! No hourly backup info to display! Quitting, there is nothing to do!")
+                        getterCode = 3
+                        exit(0)
+                    else:
+                        print("Backups for one weather script is already avalible. There is nothing to do.")
+                        log(myName, "Hourly backups were avalible, using those. Nothing to do now until next cycle.")
+                break
+            begin = False
+
+        sleep(900)
+        getterCode = 5
+
+def initConfig():
+    with open(".weatherdisprc", "w") as conf:
+        conf.write("""\
+# Weather-Displayer Config File
+# This allows you to turn on certain optional functions and change settings to fit your needs. You may ONLY enter
+# integers - no strings or booleans. If you want to change it as a boolean, use 0s (false/no) and 1s (true/yes).
+#
+# web-server: Turning this on will enable the web-based interface. Weather-Displayer uses Python's Flask library
+#             to run such an interface. You can go to the computer's IP address (displayed on screen) from a browser
+#             to see the interface when enabled, as long as the computer accessing the interface is on the same network
+#             as this computer.
+# ip-network: This setting is directly related to the web-server and does not matter if the web interface is disabled.
+#             Weather-Displayer uses ip-network to help calculate which IP address this device is.
+#             This should be set to the number in the first octet of your IP address. For many users, this would be 192,
+#             and that is what the default value is. If the script is used on networks that have multiple subnets, such
+#             as a workplace or school, it is more likely that this value should be changed to 10. You can use the "ip addr"
+#             command on Linux or "ipconfig" command in Windows to find out exactly what you should set it as.
+
+web-server=0
+ip-network=192""")
+        conf.close()
+
 def decodeTemps(data):
     temps = []
     periods = data["properties"]["periods"]
@@ -72,111 +251,100 @@ def decodeWindDir(data):
 
 def artDisplay(forecast):
     if(("Partly Sunny" in forecast) or ("Partly Cloudy" in forecast)):
-        print('''
-             \\      |    /
+        return '''             \\      |    /
               \\  ,g88R_ /  
                   d888(`  ).
          -  --==  888(     ).=--
         )         Y8P(       '`.
                 .+(`(      .   ) .--
                ((    (..__.:'-.=(   )
-         )      ` __.:'   ) (   (   ))''') # Credit to https://ascii.co.uk/art/clouds
+         )      ` __.:'   ) (   (   ))''' # Credit to https://ascii.co.uk/art/clouds
     elif("Mostly Sunny" in forecast):
-        print('''
-    ,--.:::::::::::::::::::::::::::::....:::::::
+        return '''    ,--.:::::::::::::::::::::::::::::....:::::::
         ):::::::::::::::::::::::::..      ..::::
       _'-. _::::::::::::::::::::..   ,--.   ..::
      (    ) ),--.:::::::::::::::.   (    )   .::
                  )-._:::::::::::..   `--'   ..::
-    _________________)::::::::::::..      ..::::''') # Credit: https://ascii.co.uk/art/clouds
+    _________________)::::::::::::..      ..::::''' # Credit: https://ascii.co.uk/art/clouds
     elif((forecast == "Cloudy") or (forecast == "Mostly Cloudy")):
-        print('''
-                    ███████████            
+        return '''                    ███████████            
                   ██          ████          
                 ██              ▒▒██        
             ████▒▒                ██        
       ██████      ▒▒            ▒▒▒▒████    
     ██▒▒            ▒▒        ▒▒      ▒▒██  
     ██▒▒▒▒           ▒▒▒▒▒▒▒▒▒          ▒▒██
-      ████████████████████████████████████  ''') # Credit: https://textart.sh/topic/cloud
+      ████████████████████████████████████  ''' # Credit: https://textart.sh/topic/cloud
     elif(forecast == "Sunny"):
-        print('''
-                      ,
+        return '''                      ,
                       :
          '.        _______       .'
            '  _.-"`       `"-._ '
             .'                 '.
      `'--. /                     \\ .--'`
           /                       \\
-      '   |                       |  '-.''')
+      '   |                       |  '-.'''
     elif("clear" in forecast.lower()):
-        print('''
-    --------------------------------
+        return '''    --------------------------------
     --------------------------------
     -------------------- ________ --
     --------------- ____/ +      \\__
     -------------- (       -
     ---- _________/    *      =
-    ____/    `     @             :''')
+    ____/    `     @             :'''
     elif(("rain/snow" in forecast.lower()) or ("sleet" in forecast.lower())):
-        print('''
-                      ██████            
+        return '''                      ██████            
                     ██      ████      
               ████▒▒           ███   
            ██▒▒    ▒▒        ▒▒   ▒▒██
          ██         ▒▒▒▒▒▒▒▒▒▒      ▒▒██
         █████████████████████████████████
            i  * i  * i  * i    i*   *
-         *   i  * i  * i  *  i *   i  *   ''')
+         *   i  * i  * i  *  i *   i  *   '''
     elif((("showers" in forecast.lower()) or ("shower" in forecast.lower()) or ("drizzle" in forecast.lower())) and ("slight" not in forecast.lower()) and ("snow" not in forecast.lower())):
-        print('''
-                      ██████            
+        return '''                      ██████            
                     ██      ████      
               ████▒▒           ███   
            ██▒▒    ▒▒        ▒▒   ▒▒██
          ██         ▒▒▒▒▒▒▒▒▒▒      ▒▒██
         █████████████████████████████████ 
            i    i    i     i      i 
-             i    i   i   i     i   ''')
+             i    i   i   i     i   '''
     elif(("snow" in forecast.lower()) or ("snow shower" in forecast.lower())):
-        print('''
-                      ██████            
+        return '''                      ██████            
                     ██      ████      
               ████▒▒           ███   
            ██▒▒    ▒▒        ▒▒   ▒▒██
          ██         ▒▒▒▒▒▒▒▒▒▒      ▒▒██
         █████████████████████████████████ 
            *    *    *     *      * 
-         *    *    *    *      *    *    ''')
+         *    *    *    *      *    *    '''
     elif(("rain" in forecast.lower()) and not ("slight" in forecast.lower()) and not ("shower" in forecast.lower())):
-        print('''
-              0      00  000000000000
+        return '''              0      00  000000000000
              0000 0  0000000000000000000
       000000000000000000000000000000000000
    000000000000000000000000000000000000000000
        0000000000000000000000000000000
           / / / / / / / / / / / / /
         / / / / / / / / / / / /
-        / / / / / / / / / /''') # Credit: https://www.asciiart.eu/nature/rains
+        / / / / / / / / / /''' # Credit: https://www.asciiart.eu/nature/rains
     elif((forecast == "Slight Chance Rain Showers") or (forecast == "Slight Chance Showers And Thunderstorms")):
-        print('''
-                    ███████████            
+        return '''                    ███████████            
                   ██          ████          
                 ██              ▒▒██        
             ████▒▒                ██        
       ██████      ▒▒            ▒▒▒▒████    
     ██▒▒            ▒▒        ▒▒      ▒▒██  
     ██▒▒▒▒           ▒▒▒▒▒▒▒▒▒          ▒▒██
-      ████████████████████████████████████  ''') # Credit: https://textart.sh/topic/cloud
+      ████████████████████████████████████  ''' # Credit: https://textart.sh/topic/cloud
     elif("fog" in forecast.lower()):
-        print('''
-    ---///---///---///---///---///---///
+        return '''    ---///---///---///---///---///---///
     ///-ffffff//-ooooooo/--gggggg-///---
     ---/fff--///-o-///-o-//g---/g/---///
     ///-ffffff--/o/-o-/o/--gggggg-///---
     ---/fff--///-o-///-o-///---/g/---///
     ///-fff//---/ooooooo/--gggggg-///---
-    ---///---///---///---///---///---///''')
+    ---///---///---///---///---///---///'''
     else:
         # First we have to find the characters in the longest word, then center it approprietally.
         # This is what i'm planning (this is a placeholder if the forecast isn't recognized):
@@ -186,6 +354,10 @@ def artDisplay(forecast):
             |  S u n n y  |
             +-------------+
         '''
+
+        # End string to return
+        endStr = ""
+
         # First! Calculate the amount of letters in the longest word. This will be needed
         # to center the text.
         words = forecast.split(" ")
@@ -199,75 +371,125 @@ def artDisplay(forecast):
         dashCount = letters * 2 + 2
 
         # Now let's draw the top line.
-        sys.stdout.write("\n        +")
+        endStr += "        +"
         for i in range(1, dashCount):
-            sys.stdout.write("-")
-        sys.stdout.write("+\n")
+            endStr += "-"
+        endStr += "+\n"
 
         # Cool! Now let's get into the meat and potatoes of this. Repeat this next thing for every word.
         for i in words:
             # Starting stuffs
-            sys.stdout.write("        | ")
+            endStr += "        | "
 
             # We need to find out how many spaces to put in front to space things out. We
             # can do this by making use of our old letters variable.
             spaces = letters - len(i)
             for j in range(0, spaces):
-                sys.stdout.write(" ")
+                endStr += " "
             
             # Finally start printing out letters and spaces
             inc = 0
             for j in i:
                 if(inc == letters):
-                    sys.stdout.write(j)
+                    endStr += j
                 else:
-                    sys.stdout.write(j + " ")
+                    endStr += j + " "
                 inc += 1
             
             # Now we need to add spaces again.
             for j in range(0, spaces):
-                sys.stdout.write(" ")
+                endStr += " "
             
             # Finish up
-            sys.stdout.write("|\n")
+            endStr += "|\n"
         
         # Do the last line of dashes
-        sys.stdout.write("        +")
+        endStr += "        +"
         for i in range(1, dashCount):
-            sys.stdout.write("-")
-        sys.stdout.write("+\n")
+            endStr += "-"
+        endStr += "+\n"
+
+        # Return
+        return endStr
+
+def getIP(network):
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    
+    try:
+        # Connect the socket to a dummy IP address on the LAN (255.255.255.255), and any unused port
+        # This step is necessary to obtain the local IP address of the socket.
+        fetIP = str(network) + ".255.255.255"
+        s.connect((fetIP, 1))
+        
+        # Get the local IP address of the socket
+        ip = s.getsockname()[0]
+    except:
+        # If there is an error, return the loopback address (127.0.0.1)
+        ip = '127.0.0.1'
+    finally:
+        # Close the socket
+        s.close()
+    
+    # Return the local IP address as a string
+    return ip
 
 def main():
+    global getterCode
     try:
-        # Let the log know that main.py was started properly.
-        log("Displayer Started.")
+        # Identify ourselves in logging
+        myName = "MAIN  "
 
-        # Establish a message channel with getter
-        log("Creating/Clearing Communications File...")
-        with open("passthru", "w") as comms:
-            comms.write("")
+        # Let the log know that main.py was started properly.
+        log(myName, "Displayer Started.")
+
+        # If the config file doesn't exist, initialize!
+        log(myName, "Loading configurations...")
+        if(not os.path.exists(".weatherdisprc")):
+            log(myName, ".weatherdisprc doesn't exist! Initializing...")
+            initConfig()
+
+        # We are going to store our configs in a dictionary
+        tweaks = {}
+        with open(".weatherdisprc", "r") as config:
+            # Take out trailing whitespace, and then loop
+            for i in config.read().strip().split("\n"):
+                if(i == ""):
+                    continue
+                if(i[0] == "#"):
+                    continue
+
+                element = i.split("=")
+                try:
+                    tweaks[element[0]] = int(element[1])
+                except ValueError:
+                    log(myName, "ERROR: Cannot convert to int! Skipping, with dummy value of 0.")
+                    tweaks[element[0]] = 0
+            config.close()
+
+        # Threading Things. Start with getter for now, we'll do the server if it is needed after we get data.
+        log(myName, "Starting Getter Thread...")
+        getterThread = threading.Thread(target=getter, daemon=True)
+        getterThread.start()
 
         # Do this with text outputed. We'll do this again without text on the screen later.
         if(os.path.exists("weatherCache.json") == True):
-            log("weatherCache.json still exists. Making it a backup...")
+            log(myName, "weatherCache.json still exists. Making it a backup...")
             os.rename("weatherCache.json", "weatherCache-bk.json")
         if(os.path.exists("hourWeatherCache.json") == True):
-            log("hourWeatherCache.json still exists. Making it a backup...")
+            log(myName, "hourWeatherCache.json still exists. Making it a backup...")
             os.rename("hourWeatherCache.json", "hourWeatherCache-bk.json")
+        
         while(True):
-            with open("passthru", "r") as comm:
-                comms = comm.read()
-            
             # Check for various getter messages
-            if("OUTDATE" in comms):
+            if(getterCode == 4):
                 # We've found out that the data we got is out of data, and we have no backups!
                 # Display something!
-                log("Recieved Out of Date Message")
+                log(myName, "Recieved Out of Date Message")
                 os.system("cowsay -d \"Inaccurate Data\"")
                 sleep(300)
-            if("nourl" in comms):
+            if(getterCode == 1):
                 # There is no URL File
-                log("Recieved No URL Message...")
+                log(myName, "Recieved No URL Message...")
                 print("\nERROR: Could not find the NWS Destination URL!")
                 print("If this is your first time running the script, you may have not\nput in the \
 destination URL. If you don't know how to do this,\ngo to https://github.com/JR-Tech-and-Software/Weather-Displayer\n\
@@ -280,13 +502,22 @@ and read the README.md file to explain the steps to do this.")
                 sleep(0.5)
             else:
                 # Data recieved. Let the log know!
-                log("Recieved JSON. Ready to display...")
+                log(myName, "Recieved JSON. Ready to display...")
                 break
+        
+        # Now that JSON things have been worked out, call for the web interface to start if requested.
+        if(tweaks["web-server"] == 1):
+            # Set our IP variable, we'll display this later.
+            ip = getIP(tweaks["ip-network"])
+            webThread = threading.Thread(target=web.main, daemon=True)
+            webThread.start()
+
+            # Wait for Flask to get running before continuing
+            sleep(10)
 
         # This ENTIRE thing should be repeated
         while(True):
             # Get our json data from files
-
             while(True):
                 try:
                     with open("weatherCache.json", "r") as theData:
@@ -295,16 +526,18 @@ and read the README.md file to explain the steps to do this.")
                         hourData = json.load(theData)
                     break
                 except json.decoder.JSONDecodeError as e:
-                    print("Couldn't read JSON data. Trying Again...", e)
-                    log("Couldn't decode the JSON. Trying again. Next few lines contain error information.")
-                    log(str(e))
+                    log(myName, "Couldn't decode the JSON. Trying again. Next few lines contain error information.")
+                    log(myName, str(e))
                     sleep(1)
+                except FileNotFoundError:
+                    log(myName, "Could not find JSON, probably not in the right directory. Trying again in 2 secs...")
+                    sleep(2)
             
             # Now time for the meat and potatoes of this script: Displaying weather data
             os.system("clear")
 
             # Get decoded data in arrays using functions above
-            log("Decoding JSON Data...")
+            log(myName, "Decoding JSON Data...")
             currentTemps = decodeTemps(data)
             tempUnits = decodeTempUnit(data)
             titles = decodeTitles(data)
@@ -318,54 +551,53 @@ and read the README.md file to explain the steps to do this.")
             #    print(titles[i] + ": " + forecasts[i] + ". Temp: " + str(currentTemps[i]) + "°" + tempUnits[i])
             
             # Print out display art
-            log("Printing out display...")
-            artDisplay(hourForecast[0])
+            log(myName, "Printing out display...")
+            # If web server was requested, print out IP Address
+            if(tweaks["web-server"] == 1):
+                print("Web Address: http://" +  str(ip).strip())
+            else:
+                print("\n", end='')
+            print(artDisplay(hourForecast[0]))
             print("        ", hourForecast[0])
             print("Current Temperature:", str(nowTemp[0]) + ",",
                     titles[1] + "'s Temperature:\n" + str(currentTemps[1]) + ",",
                     titles[2] + "'s Temperature:", str(currentTemps[2]))
             print("The wind:", windDir[0], "at", windSpeed[0] + ".")
 
-            log("Display has completed. Time to manage JSON files then wait.")
+            log(myName, "Display has completed. Time to manage JSON files then wait.")
 
-            # We now need to clear all cached files so that we can update it again.
-            # To do this, we'll simply make backup files (so that in the case there)
-            # is no internet to download, we can simply use those.
+            """ We now need to clear all cached files so that we can update it again.
+                To do this, we'll simply make backup files (so that in the case there)
+                is no internet to download, we can simply use those. """
+
             if(os.path.exists("weatherCache.json") == True):
                 if(os.path.exists("weatherCache-bk.json") == True):
-                    log("Previous long-term backups exist! Deleting them to ensure no confusion")
+                    log(myName, "Previous long-term backups exist! Deleting them to ensure no confusion")
                     os.remove("weatherCache-bk.json")
                 os.rename("weatherCache.json", "weatherCache-bk.json")
-                log("Transfering JSON files to backup...")
+                log(myName, "Transfering JSON files to backup...")
             if(os.path.exists("hourWeatherCache.json") == True):
                 if(os.path.exists("hourWeatherCache-bk.json") == True):
-                    log("Previous hourly backups exist! Deleting them to ensure no confusion")
+                    log(myName, "Previous hourly backups exist! Deleting them to ensure no confusion")
                     os.remove("hourWeatherCache-bk.json")
                 os.rename("hourWeatherCache.json", "hourWeatherCache-bk.json")
-                log("Transfering Hourly JSON files to backup...")
+                log(myName, "Transfering Hourly JSON files to backup...")
             i = 0
             while(True):
-                if(os.path.exists("weatherCache.json") == False):
-                    sleep(0.5)
-                    if((i > 3600) and (i < 3603)):
-                        log("Still waiting for JSON Data. Hasn't been recieved in a long time.")
-                        print("Weather info hasn't updated in a while. Try restarting the system.\nIf problems presist, check the log.")
-                else:
-                    log("New JSON recieved. Starting the cycle again.")
+                sleep(0.5)
+                if(getterCode == 5):
+                    log(myName, "New JSON recieved. Starting the cycle again.")
+                    getterCode = 0
                     break
+                else:
+                    if((i > 3600) and (i < 3603)):
+                        log(myName, "Still waiting for JSON Data. Hasn't been recieved in a long time.")
+                        print("Weather info hasn't updated in a while. Try restarting the system.\nIf problems presist, check the log.")
+                    
                 i += 1
     except KeyboardInterrupt:
         # Final things to be done
-        file = open("passthru", "w")
-        file.write("don")
-        file.close()
-        log("Interrupt signal recieved. Sending Quit Signal...")
-        print("WAIT! Quitting getter script...")
-        sleep(1)
-        file = open("passthru", "w")
-        file.write("")
-        file.close()
-        log("Done sending quit signals. Quitting.")
+        log(myName, "Keyboard Interrupt - Quitting!")
         return 0
 
 if(__name__ == "__main__"):

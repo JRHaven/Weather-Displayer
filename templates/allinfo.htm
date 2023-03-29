@@ -1,0 +1,68 @@
+<!--
+This file is part of Weather-Displayer.
+
+Weather-Displayer is free software: you can redistribute it and/or modify 
+it under the terms of the GNU General Public License as published by the Free 
+Software Foundation, either version 3 of the License, or (at your option) any 
+later version.
+
+Weather-Displayer is distributed in the hope that it will be useful, but 
+WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
+FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more 
+details.
+
+You should have received a copy of the GNU General Public License along with 
+Weather-Displayer. If not, see <https://www.gnu.org/licenses/>. 
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/style.css">
+    <title>NWS Weather: Full Forecast</title>
+    <meta http-equiv="refresh" content="900">
+</head>
+<body>
+    <div id="header">
+        <h1>Full NWS Forecast</h1>
+        <small>Visit <a href="https://www.weather.gov">the official NWS website</a> for more information.</small>
+    </div>
+    <br>
+    <br>
+    <div id="fullOutlook">
+        {% for i in range(0,title|length) %}
+        <div id="horr-future">
+            {% if title[i] != "" %}
+            <h3>{{ title[i] }}</h3>
+            {% else %}
+            <h3>Hour {{i}}</h3>
+            {% endif %}
+
+            {% if shortDesc[i].split(" ")|length > 3 %}
+            <h4 style="padding-bottom:0.5%">{{ shortDesc[i] }}</h4>
+            {% elif shortDesc[i].split(" ")|length > 7 %}
+            <h4 style="padding-bottom:0.25%">{{ shortDesc[i] }}</h4>
+            {% else %}
+            <h4>{{ shortDesc[i] }}</h4>
+            {% endif %}
+            <h4 id="temp">{{ temp[i] }}&deg;{{unit}}</h4>
+            <p>
+                {% if longDesc[i] != "" %}
+                {{ longDesc[i] }}
+                <br><br>
+                {% endif %}
+                
+                Humidity: {{ humid[i] }}%
+            </p>
+        </div>
+        {% if i < title|length - 1 %}
+        <div id="horr-divider"></div>
+        {% endif %}
+        {% endfor %}
+        <a href="{{ url_for('display') }}">Show Full Forecast</a>
+    </div>
+</body>
+</html>

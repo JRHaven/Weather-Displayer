@@ -1,0 +1,75 @@
+<!--
+This file is part of Weather-Displayer.
+
+Weather-Displayer is free software: you can redistribute it and/or modify 
+it under the terms of the GNU General Public License as published by the Free 
+Software Foundation, either version 3 of the License, or (at your option) any 
+later version.
+
+Weather-Displayer is distributed in the hope that it will be useful, but 
+WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
+FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more 
+details.
+
+You should have received a copy of the GNU General Public License along with 
+Weather-Displayer. If not, see <https://www.gnu.org/licenses/>. 
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/style.css">
+    <title>NWS Weather</title>
+    <meta http-equiv="refresh" content="900">
+</head>
+<body>
+    <div id="header">
+        <h1>Current NWS Weather</h1>
+        <small>Visit <a href="https://www.weather.gov">the official NWS website</a> for more information.</small>
+    </div>
+    <br>
+    <div id="current-conditions">
+        <div id="inline">
+            <div id="image">
+                <pre>{{ currentWeather[5] }}</pre>
+                <h2 id="currentForecast">{{ currentWeather[0] }}</h2>
+            </div>
+            <h3 id="temp">{{ currentWeather[1] }}&deg;{{currentWeather[2]}}</h3>
+        </div>
+        <p>
+            {{currentWeather[3]}}
+            <br><br>
+            Humidity: {{currentWeather[4]}}%
+        </p>
+    </div>
+    <br>
+    <div id="outlook">
+        {% for i in range(0,4) %}
+        <div id="future">
+            <h3>{{ title[i] }}</h3>
+            {% if shortDesc[i].split(" ")|length > 3 %}
+            <h4 style="padding-bottom:0.5%">{{ shortDesc[i] }}</h4>
+            {% elif shortDesc[i].split(" ")|length > 7 %}
+            <h4 style="padding-bottom:0.25%">{{ shortDesc[i] }}</h4>
+            {% else %}
+            <h4>{{ shortDesc[i] }}</h4>
+            {% endif %}
+            <h4 id="temp">{{ temp[i] }}&deg;{{currentWeather[2]}}</h4>
+            <p>
+                {{ longDesc[i] }}
+                <br><br>
+                Humidity: {{ humid[i] }}%
+            </p>
+        </div>
+        {% if i < 3 %}
+        <div id="divider"></div>
+        {% endif %}
+        {% endfor %}
+    </div>
+
+    <div id="fullCenter"><p><a href="{{ url_for('fullForecast') }}">Show Full Forecast</a> | <a href="{{ url_for('hourly') }}">Show Hourly Forecast</a></p></div>
+</body>
+</html>

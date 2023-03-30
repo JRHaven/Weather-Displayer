@@ -37,7 +37,7 @@ You will then need to download Python 3 if you haven't already. Head over to [th
 latest version of Python 3. 
 
 After this, you need to download a program called "cowsay". After downloading Python, you can do this from the Pip package manager. After ensuring Pip is 
-in your PATH environment variable, you can run ```pip install cowsay``` in an **Administrative** command line. You will also need to run ```pip install flask``
+in your PATH environment variable, you can run ```pip install cowsay``` in an **Administrative** command line. You will also need to run ```pip install flask```
 in order to install the flask library to run the web frontend, and ```pip install requests``` to install the urllib library, which downloads the JSON contents from the NWS API.
 
 You may also want to change line 537 in `main.py` from `os.system("clear")` to `os.system("cls")`.
@@ -83,8 +83,6 @@ On any distro: ```sudo pip install flask requests```
 
 
 From here, simply clone this repository, either with the above "Code" drop-down or with ```git clone "https://github.com/JR-Tech-and-Software/Weather-Displayer/Weather-Displayer.git"```
-
-Once downloaded, you will need to be sure all scripts are marked as executable. You can do this either through a graphical file manager or run the command `chmod 755 *.py`.
 
 ### All
 After Python is installed and the project has been downloaded, you will need to tell the script the URL to get your local weather data. It can take 

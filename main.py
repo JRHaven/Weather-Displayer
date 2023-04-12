@@ -40,17 +40,31 @@ startTime = time.time()
 getterCode = 0
 getterRun = 1
 
+# Global variable to determine whether the web interface should run
+webInterface = False
+
 # Function to write to log file
 def log(thread, msg):
     logFile = open("log", "a")
     logFile.write(thread + "   [" + str(f"{(time.time() - startTime):f}") + " - " + time.strftime("%m %d %H:%M:%S", time.localtime()) + "]: " + str(msg) + "\n")
     logFile.close()
 
-    # Permissions! This is probably going to be run as sudo.
-    os.chmod("log", 0o777)
+    # Permissions! This is probably going to be run as sudo. Use global variable webInterface.
+    global webInterface
+    if(webInterface):
+        os.chmod("log", 0o777)
+
+# Deal with permissions only if web-server is enabled. If it is disabled, the program is probably not being run
+# as sudo and thus doesn't require changing file permissions.
+def permGrant(myName, file, serverEnabled=False):
+    if(serverEnabled):
+        log(myName, "Web Interface enabled. Granting full permission to " + file + "...")
+        os.chmod(file, 0o777)
 
 def getter():
     global getterCode
+
+    # Set this variable for easy identification for logging purposes
     myName = "GETTER"
     # Report to log that script has been started
     log(myName, "JSON Getter Started.")
@@ -114,17 +128,15 @@ def getter():
                     getterCode = 0
                     continue
                 else:
-                    fail = False
-                
-                if(fail == False):
+                    # Use global variable webInterface
+                    global webInterface
                     with open("weatherCache.json", "w") as dumpFile:
                         json.dump(data, dumpFile)
                         dumpFile.close()
                         log(myName, "Dumping long-term JSON to file, weatherCache.json")
 
                         # Permissions! This is probably going to be run as sudo.
-                        log(myName, "Granting full permission to weatherCache.json...")
-                        os.chmod("weatherCache.json", 0o777)
+                        permGrant(myName, "weatherCache.json", webInterface)
                 
                     with open("hourWeatherCache.json", "w") as hourDumbFile:
                         json.dump(hourData, hourDumbFile)
@@ -132,12 +144,11 @@ def getter():
                         log(myName, "Dumping hourly JSON to file, hourWeatherCache.json")
 
                         # Permissions! This is probably going to be run as sudo.
-                        log(myName, "Granting full permission to hourWeatherCache.json...")
-                        os.chmod("hourWeatherCache.json", 0o777)
+                        permGrant(myName, "hourWeatherCache.json", webInterface)
+                    
+                    # Tell main that we are now waiting for the next thing
+                    getterCode = 0
                 break
-                # If there was an error while doing this, void it.
-                #if(os.path.exists("late-error") == True):
-                #    os.remove("late-error")
             except urllib.error.HTTPError as e:
                 # We've gotten a 500 error. This goes away after a second or so, so let's try again
                 # Report to log
@@ -191,20 +202,42 @@ def initConfig():
 # Weather-Displayer Config File
 # This allows you to turn on certain optional functions and change settings to fit your needs. You may ONLY enter
 # integers - no strings or booleans. If you want to change it as a boolean, use 0s (false/no) and 1s (true/yes).
+
+# -------- GENERAL CONFIG --------
+# This is the main area for configuring the main, integral parts of Weather-Displayer.
 #
-# web-server: Turning this on will enable the web-based interface. Weather-Displayer uses Python's Flask library
-#             to run such an interface. You can go to the computer's IP address (displayed on screen) from a browser
-#             to see the interface when enabled, as long as the computer accessing the interface is on the same network
-#             as this computer.
+# web-server:   Turning this on will enable the web-based interface. Weather-Displayer uses Python's Flask library
+#               to run such an interface. You can go to the computer's IP address (displayed on screen) from a browser
+#               to see the interface when enabled, as long as the computer accessing the interface is on the same network
+#               as this computer.
+#
+# main-display: Determins whether Weather-Displayer will print out info to the terminal. There will still be text from the
+#               getter and maybe from Flask, but there will be no weather info. If both main-display and web-server are
+#               turned off, only the getter function will be operational.
+#
+#               If you are seeing this on a freshly generated config file, main-display is commented out and will not
+#               do anything. I plan on making it functional soon, but right now I'm working on other things.
+web-server=0
+#main-display=1
+
+# -------- WEB INTERFACE CONFIG --------
+# This is the area where we will configure the web interface.
+#
 # ip-network: This setting is directly related to the web-server and does not matter if the web interface is disabled.
 #             Weather-Displayer uses ip-network to help calculate which IP address this device is.
-#             This should be set to the number in the first octet of your IP address. For many users, this would be 192,
+#             This should be set to the number in the first octet of your local IP address. For many users, this would be 192,
 #             and that is what the default value is. If the script is used on networks that have multiple subnets, such
 #             as a workplace or school, it is more likely that this value should be changed to 10. You can use the "ip addr"
 #             command on Linux or "ipconfig" command in Windows to find out exactly what you should set it as.
-
-web-server=0
-ip-network=192""")
+#
+# port:       What port should the web-interface run on? By default, it will run on port 80, which is the default in
+#             most systems for http traffic. Setting the port to 80, however, will require Weather-Displayer to be run
+#             as super user. If you don't want this but still want to use the web interface, change this number to an
+#             unused port, such as 5000. Just know that if you do this, you will need to change the url you access
+#             the web interface from. For example, with the port being set to 5000 with an IP Address of 192.168.0.50,
+#             the url to access the web interface would be http://192.168.0.50:5000
+ip-network=192
+port=80""")
         conf.close()
 
 def decodeTemps(data):
@@ -465,6 +498,20 @@ def main():
                     log(myName, "ERROR: Cannot convert to int! Skipping, with dummy value of 0.")
                     tweaks[element[0]] = 0
             config.close()
+        
+        # Set global variable webInterface so that getter will know whether to change file permissions, and for
+        # a more reliable way of checking if the web interface is enabled
+        global webInterface
+        # Use try to detect a KeyError
+        try:
+            if(tweaks["web-server"] == 1):
+                webInterface = True
+
+                # The port variable is essential in this case.
+                if("port" not in tweaks):
+                    tweaks["port"] = 80
+        except KeyError:
+            log(myName, "web-server variable not found in config file! Keeping webInterface set to false.")
 
         # Threading Things. Start with getter for now, we'll do the server if it is needed after we get data.
         log(myName, "Starting Getter Thread...")
@@ -479,6 +526,7 @@ def main():
             log(myName, "hourWeatherCache.json still exists. Making it a backup...")
             os.rename("hourWeatherCache.json", "hourWeatherCache-bk.json")
         
+        print("Waiting for data...")
         while(True):
             # Check for various getter messages
             if(getterCode == 4):
@@ -497,19 +545,16 @@ and read the README.md file to explain the steps to do this.")
                 sleep(5)
                 return 1
 
-            if(os.path.exists("weatherCache.json") == False):
-                print("Waiting for data...")
-                sleep(0.5)
-            else:
+            if(getterCode == 0):
                 # Data recieved. Let the log know!
                 log(myName, "Recieved JSON. Ready to display...")
                 break
         
         # Now that JSON things have been worked out, call for the web interface to start if requested.
-        if(tweaks["web-server"] == 1):
+        if(webInterface):
             # Set our IP variable, we'll display this later.
             ip = getIP(tweaks["ip-network"])
-            webThread = threading.Thread(target=web.main, daemon=True)
+            webThread = threading.Thread(target=web.main, args=[tweaks["port"]], daemon=True)
             webThread.start()
 
             # Wait for Flask to get running before continuing
@@ -553,7 +598,7 @@ and read the README.md file to explain the steps to do this.")
             # Print out display art
             log(myName, "Printing out display...")
             # If web server was requested, print out IP Address
-            if(tweaks["web-server"] == 1):
+            if(webInterface):
                 print("Web Address: http://" +  str(ip).strip())
             else:
                 print("\n", end='')
@@ -590,11 +635,12 @@ and read the README.md file to explain the steps to do this.")
                     getterCode = 0
                     break
                 else:
-                    if((i > 3600) and (i < 3603)):
+                    if(i == 3600):
                         log(myName, "Still waiting for JSON Data. Hasn't been recieved in a long time.")
                         print("Weather info hasn't updated in a while. Try restarting the system.\nIf problems presist, check the log.")
-                    
-                i += 1
+                
+                if(i < 3602):
+                    i += 1
     except KeyboardInterrupt:
         # Final things to be done
         log(myName, "Keyboard Interrupt - Quitting!")

@@ -510,14 +510,14 @@ def hourly():
     return flask.render_template("allinfo.htm", title=getTitles(hourData), shortDesc=getShortForecasts(hourData), temp=getTemps(hourData),\
         longDesc=getDetailForecasts(hourData), humid=getHumidity(hourData), unit=hourData["properties"]["periods"][0]["temperatureUnit"])
 
-def main():
+def main(port):
     # Get our things
     initDirs()
     getInfo()
 
     # Run flask in a seperate thread
-    log("Creating and starting Flask thread with Debug false, host 0.0.0.0, port 80, and no reloader...")
-    flaskThread = threading.Thread(target=iamweb.run, kwargs={"debug":False, "host":"0.0.0.0", "port":80, "use_reloader":False})
+    log("Creating and starting Flask thread with Debug false, host 0.0.0.0, port" + str(port) + ", and no reloader...")
+    flaskThread = threading.Thread(target=iamweb.run, kwargs={"debug":False, "host":"0.0.0.0", "port":port, "use_reloader":False})
     flaskThread.start()
 
     # Loop to change info every 15 minutes

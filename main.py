@@ -59,7 +59,11 @@ def log(thread, msg):
 def permGrant(myName, file, serverEnabled=False):
     if(serverEnabled):
         log(myName, "Web Interface enabled. Granting full permission to " + file + "...")
-        os.chmod(file, 0o777)
+        # Use try to ignore if file not exists error
+        try:
+            os.chmod(file, 0o777)
+        except FileNotFoundError:
+            log(myName, file + " vanished! Permissions could not be granted. Moving on!")
 
 def getter():
     global getterCode
@@ -575,7 +579,7 @@ and read the README.md file to explain the steps to do this.")
                     log(myName, str(e))
                     sleep(1)
                 except FileNotFoundError:
-                    log(myName, "Could not find JSON, probably not in the right directory. Trying again in 2 secs...")
+                    log(myName, "Could not find JSON. Trying again in 2 secs...")
                     sleep(2)
             
             # Now time for the meat and potatoes of this script: Displaying weather data

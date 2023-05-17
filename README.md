@@ -28,12 +28,14 @@ The main part of the script that interprets data from the NWS API and displays i
 This controls the web interface, using the Flask library
 
 ## Installation
+If you want the latest stable version, you can download the project from the releases section. If you want to have the "nightly" version, you can use a `git clone`
+command to clone this repository and continue from there.
 
 ### Windows
-First off, this script was designed for use on Linux, specifically for the Raspberry Pi. If you wish to run it on Windows, you can clone this repo and 
-build your own batch script. Just make sure the getter script is executed first, in a seperate thread.
+First off, this script was designed for use on Linux, specifically for the Raspberry Pi. Because I did not design for Windows, and I don't plan on ever using it or testing it
+with Windows, **use it at your own risk. I cannot guarantee any sort of stable functionality when running on anything other than Linux**.
 
-You will then need to download Python 3 if you haven't already. Head over to [the Python Project's Website](https://www.python.org/) and download the 
+You will need to download Python 3 if you haven't already. Head over to [the Python Project's Website](https://www.python.org/) and download the 
 latest version of Python 3. 
 
 After this, you need to download a program called "cowsay". After downloading Python, you can do this from the Pip package manager. After ensuring Pip is 
@@ -43,7 +45,8 @@ in order to install the flask library to run the web frontend, and ```pip instal
 You may also want to change line 537 in `main.py` from `os.system("clear")` to `os.system("cls")`.
 
 ### MacOS
-I am not familiar with MacOS, nor do I have a Mac to test this on. Basically install Python, Cowsay, Flask, and Requests, then download the project.
+I am not familiar with MacOS, nor do I have a Mac to test this on. Similar to Windows, **I cannot guarantee any sort of stable functionality when running on anything other than
+Linux**. As for installation, you basically install Python, Cowsay, Flask, and Requests, then download the project.
 
 ### Linux
 Not much setup should be needed on Linux, the vast majority of distros already have Python installed. But if you don't, run:
@@ -79,10 +82,6 @@ Arch (as root): ```pacman -S python-pip```
 Now you'll need to install the Flask and Requests libraries through pip.
 
 On any distro: ```sudo pip install flask requests```
-
-
-
-From here, simply clone this repository, either with the above "Code" drop-down or with ```git clone "https://github.com/JR-Tech-and-Software/Weather-Displayer/Weather-Displayer.git"```
 
 ### All
 After Python is installed and the project has been downloaded, you will need to tell the script the URL to get your local weather data. It can take 

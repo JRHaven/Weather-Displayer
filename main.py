@@ -411,7 +411,7 @@ def artDisplay(forecast):
             if(len(i) > letters):
                 letters = len(i)
 
-        # Now we need to compoute exactly how many dashes we will need on the top row.
+        # Now we need to compute exactly how many dashes we will need on the top row.
         # That is, the letters multiplied by two and then add two for padding.
         dashCount = letters * 2 + 2
 

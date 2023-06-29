@@ -382,6 +382,14 @@ def artDisplay(forecast):
     ---/fff--///-o-///-o-///---/g/---///
     ///-fff//---/ooooooo/--gggggg-///---
     ---///---///---///---///---///---///'''
+    elif("haze" in forecast.lower()):
+        return '''    \\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/
+    /\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\
+    \\/\\/\\/\\/\\/\\/\\/\\/\\/\\/ ________ \\/
+    /\\/\\/\\/\\/\\/\\/\\/ ____/ +      \\__
+    \\/\\/\\/\\/\\/\\/\\/ (       -
+    /\\/\\ _________/    *      =
+    ____/    `     @             :'''
     else:
         # First we have to find the characters in the longest word, then center it approprietally.
         # This is what i'm planning (this is a placeholder if the forecast isn't recognized):
@@ -444,7 +452,7 @@ def artDisplay(forecast):
         endStr += "        +"
         for i in range(1, dashCount):
             endStr += "-"
-        endStr += "+\n"
+        endStr += "+"
 
         # Return
         return endStr
@@ -639,11 +647,11 @@ and read the README.md file to explain the steps to do this.")
                     getterCode = 0
                     break
                 else:
-                    if(i == 3600):
+                    if(i == 7200):
                         log(myName, "Still waiting for JSON Data. Hasn't been recieved in a long time.")
                         print("Weather info hasn't updated in a while. Try restarting the system.\nIf problems presist, check the log.")
                 
-                if(i < 3602):
+                if(i < 7202):
                     i += 1
     except KeyboardInterrupt:
         # Final things to be done

@@ -221,8 +221,13 @@ def initConfig():
 #
 #               If you are seeing this on a freshly generated config file, main-display is commented out and will not
 #               do anything. I plan on making it functional soon, but right now I'm working on other things.
+#
+# show-IP:      Determins whether the system's IP Address be displayed. Will be displayed at the top of the terminal
+#               on each update, similar to what happens when web-server is enabled. If both show-IP and web-server are enabled,
+#               web-server's display rules takes precedence.
 web-server=0
 #main-display=1
+show-IP=0
 
 # -------- WEB INTERFACE CONFIG --------
 # This is the area where we will configure the web interface.
@@ -524,6 +529,13 @@ def main():
                     tweaks["port"] = 80
         except KeyError:
             log(myName, "web-server variable not found in config file! Keeping webInterface set to false.")
+        
+        # Check if we need to show IP - we'll need this later.
+        if("show-IP" in tweaks):
+            showIP = tweaks["show-IP"]
+        else:
+            showIP = 0
+            log(myName, "Showing IP config isn't configured! Using default value of false.")
 
         # Threading Things. Start with getter for now, we'll do the server if it is needed after we get data.
         log(myName, "Starting Getter Thread...")
@@ -562,10 +574,13 @@ and read the README.md file to explain the steps to do this.")
                 log(myName, "Recieved JSON. Ready to display...")
                 break
         
-        # Now that JSON things have been worked out, call for the web interface to start if requested.
-        if(webInterface):
+        # Calculate IP if webInterface or show-IP is enabled
+        if(webInterface or (showIP == 1)):
             # Set our IP variable, we'll display this later.
             ip = getIP(tweaks["ip-network"])
+
+        # Now that JSON things have been worked out, call for the web interface to start if requested.
+        if(webInterface):
             webThread = threading.Thread(target=web.main, args=[tweaks["port"]], daemon=True)
             webThread.start()
 
@@ -611,7 +626,17 @@ and read the README.md file to explain the steps to do this.")
             log(myName, "Printing out display...")
             # If web server was requested, print out IP Address
             if(webInterface):
-                print("Web Address: http://" +  str(ip).strip())
+                # Check if IP is 127.0.0.1. If this IP is given, no IP could be estaablished.
+                if(str(ip).strip() == "127.0.0.1"):
+                    print("IP Address could not be calculated.")
+                else:
+                    print("Web Address: http://" +  str(ip).strip())
+            elif(showIP == 1):
+                # Check if IP is 127.0.0.1. If this IP is given, no IP could be estaablished.
+                if(str(ip).strip() == "127.0.0.1"):
+                    print("IP Address could not be calculated.")
+                else:
+                    print("IP: " +  str(ip).strip())
             else:
                 print("\n", end='')
             print(artDisplay(hourForecast[0]))

@@ -225,9 +225,15 @@ def initConfig():
 # show-IP:      Determins whether the system's IP Address be displayed. Will be displayed at the top of the terminal
 #               on each update, similar to what happens when web-server is enabled. If both show-IP and web-server are enabled,
 #               web-server's display rules takes precedence.
+#
+# time:         Determmins if a clock should be displayed. Options include:
+#               0: Don't show clock (default)
+#               1: Show a clock - use 12 hour format
+#               2: Show a clock - use 24 hour format
 web-server=0
 #main-display=1
 show-IP=0
+time=0
 
 # -------- WEB INTERFACE CONFIG --------
 # This is the area where we will configure the web interface.
@@ -530,6 +536,10 @@ def main():
         except KeyError:
             log(myName, "web-server variable not found in config file! Keeping webInterface set to false.")
         
+        # Ensure time variable is initialized
+        if("time" not in tweaks):
+            tweaks["time"] = 0
+        
         # Check if we need to show IP - we'll need this later.
         if("show-IP" in tweaks):
             showIP = tweaks["show-IP"]
@@ -549,7 +559,10 @@ def main():
         if(os.path.exists("hourWeatherCache.json") == True):
             log(myName, "hourWeatherCache.json still exists. Making it a backup...")
             os.rename("hourWeatherCache.json", "hourWeatherCache-bk.json")
-        
+
+        # Report to log what tweaks are configured as
+        log(myName, "Tweaks Config right before display loop: " + str(tweaks))
+
         print("Waiting for data...")
         while(True):
             # Check for various getter messages
@@ -587,58 +600,85 @@ and read the README.md file to explain the steps to do this.")
             # Wait for Flask to get running before continuing
             sleep(10)
 
+        # Get our json data from files
+        while(True):
+            try:
+                with open("weatherCache.json", "r") as theData:
+                    data = json.load(theData)
+                with open("hourWeatherCache.json", "r") as theData:
+                    hourData = json.load(theData)
+                break
+            except json.decoder.JSONDecodeError as e:
+                log(myName, "Couldn't decode the JSON. Trying again. Next few lines contain error information.")
+                log(myName, str(e))
+                sleep(1)
+            except FileNotFoundError:
+                log(myName, "Could not find JSON. Trying again in 2 secs...")
+                sleep(2)
+        
+        # Get decoded data in arrays using functions above
+        log(myName, "Decoding JSON Data...")
+        currentTemps = decodeTemps(data)
+        tempUnits = decodeTempUnit(data)
+        titles = decodeTitles(data)
+        forecasts = decodeForecasts(data)
+        windSpeed = decodeWindSpeed(hourData)
+        windDir = decodeWindDir(hourData)
+        hourForecast = decodeForecasts(hourData)
+        nowTemp = decodeTemps(hourData)
+
+        # Counter we will need later
+        i = 0
+
         # This ENTIRE thing should be repeated
         while(True):
-            # Get our json data from files
-            while(True):
-                try:
-                    with open("weatherCache.json", "r") as theData:
-                        data = json.load(theData)
-                    with open("hourWeatherCache.json", "r") as theData:
-                        hourData = json.load(theData)
-                    break
-                except json.decoder.JSONDecodeError as e:
-                    log(myName, "Couldn't decode the JSON. Trying again. Next few lines contain error information.")
-                    log(myName, str(e))
-                    sleep(1)
-                except FileNotFoundError:
-                    log(myName, "Could not find JSON. Trying again in 2 secs...")
-                    sleep(2)
-            
+            # Get current time (if enabled)
+            if(tweaks["time"] != 0):
+                # Figure out input string to strftime
+                if(tweaks["time"] == 1):
+                    timeMakStr = "%H:%M"
+                else:
+                    timeMakStr = "%I:%M %p"
+                timeStr = time.strftime(timeMakStr, time.localtime())
+
             # Now time for the meat and potatoes of this script: Displaying weather data
             os.system("clear")
-
-            # Get decoded data in arrays using functions above
-            log(myName, "Decoding JSON Data...")
-            currentTemps = decodeTemps(data)
-            tempUnits = decodeTempUnit(data)
-            titles = decodeTitles(data)
-            forecasts = decodeForecasts(data)
-            windSpeed = decodeWindSpeed(hourData)
-            windDir = decodeWindDir(hourData)
-            hourForecast = decodeForecasts(hourData)
-            nowTemp = decodeTemps(hourData)
 
             #for i in range(0,4):
             #    print(titles[i] + ": " + forecasts[i] + ". Temp: " + str(currentTemps[i]) + "°" + tempUnits[i])
             
-            # Print out display art
+            # Print out display
             log(myName, "Printing out display...")
+
+            # Heading Info Line. Depending on what options are enabled, it could consist of nothing, an IP Address,
+            # a web server URL, and/or a clock. Thus, use a variable to help us out.
+            infoStr = ""
             # If web server was requested, print out IP Address
             if(webInterface):
                 # Check if IP is 127.0.0.1. If this IP is given, no IP could be estaablished.
                 if(str(ip).strip() == "127.0.0.1"):
-                    print("IP Address could not be calculated.")
+                    infoStr += "IP Address could not be calculated."
                 else:
-                    print("Web Address: http://" +  str(ip).strip())
+                    infoStr += "Web Address: http://" +  str(ip).strip()
             elif(showIP == 1):
                 # Check if IP is 127.0.0.1. If this IP is given, no IP could be estaablished.
                 if(str(ip).strip() == "127.0.0.1"):
-                    print("IP Address could not be calculated.")
+                    infoStr += "IP Address could not be calculated."
                 else:
-                    print("IP: " +  str(ip).strip())
-            else:
-                print("\n", end='')
+                    infoStr += "IP: " +  str(ip).strip()
+            
+            # Clock. Right now this will be a couple spaces over from rest, but eventually I want it
+            # to be justified to the right of the terminal window.
+            if(tweaks["time"] != 0):
+                if(infoStr != ""):
+                    infoStr += "   " + timeStr
+                else:
+                    infoStr = timeStr
+            
+            # Print the info string
+            print(infoStr)
+
+
             print(artDisplay(hourForecast[0]))
             print("        ", hourForecast[0])
             print("Current Temperature:", str(nowTemp[0]) + ",",
@@ -646,30 +686,65 @@ and read the README.md file to explain the steps to do this.")
                     titles[2] + "'s Temperature:", str(currentTemps[2]))
             print("The wind:", windDir[0], "at", windSpeed[0] + ".")
 
-            log(myName, "Display has completed. Time to manage JSON files then wait.")
-
-            """ We now need to clear all cached files so that we can update it again.
-                To do this, we'll simply make backup files (so that in the case there)
-                is no internet to download, we can simply use those. """
-
-            if(os.path.exists("weatherCache.json") == True):
-                if(os.path.exists("weatherCache-bk.json") == True):
-                    log(myName, "Previous long-term backups exist! Deleting them to ensure no confusion")
-                    os.remove("weatherCache-bk.json")
-                os.rename("weatherCache.json", "weatherCache-bk.json")
-                log(myName, "Transfering JSON files to backup...")
-            if(os.path.exists("hourWeatherCache.json") == True):
-                if(os.path.exists("hourWeatherCache-bk.json") == True):
-                    log(myName, "Previous hourly backups exist! Deleting them to ensure no confusion")
-                    os.remove("hourWeatherCache-bk.json")
-                os.rename("hourWeatherCache.json", "hourWeatherCache-bk.json")
-                log(myName, "Transfering Hourly JSON files to backup...")
-            i = 0
             while(True):
                 sleep(0.5)
+                if(((i % 120) == 0) and (i > 1)):
+                    i += 1
+                    break
+                elif(i == 0):
+                    # All the things we need to do to wrap up displaying
+                    log(myName, "Display has completed. Time to manage JSON files then wait.")
+
+                    """ We now need to clear all cached files so that we can update it again.
+                        To do this, we'll simply make backup files (so that in the case there)
+                        is no internet to download, we can simply use those. """
+
+                    if(os.path.exists("weatherCache.json") == True):
+                        if(os.path.exists("weatherCache-bk.json") == True):
+                            log(myName, "Previous long-term backups exist! Deleting them to ensure no confusion")
+                            os.remove("weatherCache-bk.json")
+                        os.rename("weatherCache.json", "weatherCache-bk.json")
+                        log(myName, "Transfering JSON files to backup...")
+                    if(os.path.exists("hourWeatherCache.json") == True):
+                        if(os.path.exists("hourWeatherCache-bk.json") == True):
+                            log(myName, "Previous hourly backups exist! Deleting them to ensure no confusion")
+                            os.remove("hourWeatherCache-bk.json")
+                        os.rename("hourWeatherCache.json", "hourWeatherCache-bk.json")
+                        log(myName, "Transfering Hourly JSON files to backup...")
+                
                 if(getterCode == 5):
                     log(myName, "New JSON recieved. Starting the cycle again.")
                     getterCode = 0
+
+                    # Reset Counter
+                    i = 0
+
+                    # Get our json data from files
+                    while(True):
+                        try:
+                            with open("weatherCache.json", "r") as theData:
+                                data = json.load(theData)
+                            with open("hourWeatherCache.json", "r") as theData:
+                                hourData = json.load(theData)
+                            break
+                        except json.decoder.JSONDecodeError as e:
+                            log(myName, "Couldn't decode the JSON. Trying again. Next few lines contain error information.")
+                            sleep(1)
+                        except FileNotFoundError:
+                            log(myName, "Could not find JSON. Trying again in 2 secs...")
+                            sleep(2)
+                        
+                    # Get decoded data in arrays using functions above
+                    log(myName, "Decoding JSON Data...")
+                    currentTemps = decodeTemps(data)
+                    tempUnits = decodeTempUnit(data)
+                    titles = decodeTitles(data)
+                    forecasts = decodeForecasts(data)
+                    windSpeed = decodeWindSpeed(hourData)
+                    windDir = decodeWindDir(hourData)
+                    hourForecast = decodeForecasts(hourData)
+                    nowTemp = decodeTemps(hourData)
+
                     break
                 else:
                     if(i == 7200):

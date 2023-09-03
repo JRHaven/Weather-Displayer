@@ -635,7 +635,7 @@ and read the README.md file to explain the steps to do this.")
             # Get current time (if enabled)
             if(tweaks["time"] != 0):
                 # Figure out input string to strftime
-                if(tweaks["time"] == 1):
+                if(tweaks["time"] == 2):
                     timeMakStr = "%H:%M"
                 else:
                     timeMakStr = "%I:%M %p"

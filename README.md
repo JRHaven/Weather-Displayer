@@ -101,7 +101,7 @@ option best fit for you.
    ![Needed URL](screenshots/forecast_url_visible.png)
    3. This is the URL we need to give the program. Open this URL up in a new tab to ensure it works. You should see something similar to me here:
    ![Resulting JSON](screenshots/URL.png)
-5. Put the URL in a file called `url`. Be sure there is no file extensions, especially if you are running Windows. This file sould be in the same directory as the other Python files.
+5. Put the URL in a file called `url`. Be sure there is no file extensions, especially if you are running Windows. This file should be in the same directory as the other Python files.
 6. You are ready to go! Run the `main.py` file and see your weather data!
 
 ## Web Interface

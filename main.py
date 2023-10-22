@@ -577,17 +577,31 @@ def main():
                 log(myName, "Recieved Out of Date Message")
                 os.system("cowsay -d \"Inaccurate Data\"")
                 sleep(300)
-            if(getterCode == 1):
+            elif(getterCode == 1):
                 # There is no URL File
                 log(myName, "Recieved No URL Message...")
                 print("\nERROR: Could not find the NWS Destination URL!")
                 print("If this is your first time running the script, you may have not\nput in the \
 destination URL. If you don't know how to do this,\ngo to https://github.com/JR-Tech-and-Software/Weather-Displayer\n\
 and read the README.md file to explain the steps to do this.")
-                sleep(5)
+                input("Press enter to exit...")
                 return 1
-
-            if(getterCode == 0):
+            elif(getterCode == 2):
+                # Critical error, couldn't retrieve general weather data.
+                # Getter already prints out handy dandy message, just prompt user to quit
+                log(myName, "Recieved getterCode 2. Prompting user to quit...")
+                sleep(0.1)
+                input("Press enter to exit...")
+                log(myName, "Quitting with exit value of 1!")
+                return 1
+            elif(getterCode == 3):
+                # Similar error, handled in the exact same way
+                log(myName, "Recieved getterCode 3. Prompting user to quit...")
+                sleep(0.1)
+                input("Press enter to exit...")
+                log(myName, "Quitting with exit value of 1!")
+                return 1
+            elif(getterCode == 5):
                 # Data recieved. Let the log know!
                 log(myName, "Recieved JSON. Ready to display...")
                 break
@@ -717,7 +731,7 @@ and read the README.md file to explain the steps to do this.")
                         os.rename("hourWeatherCache.json", "hourWeatherCache-bk.json")
                         log(myName, "Transfering Hourly JSON files to backup...")
                 
-                if(getterCode == 5):
+                if(getterCode == 5 and i > 1):
                     log(myName, "New JSON recieved. Starting the cycle again.")
                     getterCode = 0
 

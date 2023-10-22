@@ -111,6 +111,7 @@ def getter():
                         hourData = json.loads(url.read().decode())
                 
                 log(myName, "JSON Data Successfully Retrieved.")
+
                 hourGenDate = str(hourData["properties"]["generatedAt"])
                 longGenDate = str(data["properties"]["generatedAt"])
                 today = time.strftime("%Y-%m-%d", time.gmtime())
@@ -150,8 +151,13 @@ def getter():
                         # Permissions! This is probably going to be run as sudo.
                         permGrant(myName, "hourWeatherCache.json", webInterface)
                     
-                    # Tell main that we are now waiting for the next thing
+                    # Let main know that we have retrieved JSON
+                    getterCode = 5
+                    log(myName, "JSON all dealt with here! Getter code set to value of 5...")
+                    # Tell main that we are now waiting for the next thing, after a second delay
+                    sleep(1)
                     getterCode = 0
+                    log(myName, "Reset Getter code to value of 0: waiting...")
                 break
             except urllib.error.HTTPError as e:
                 # We've gotten a 500 error. This goes away after a second or so, so let's try again
@@ -198,7 +204,6 @@ def getter():
             begin = False
 
         sleep(900)
-        getterCode = 5
 
 def initConfig():
     with open(".weatherdisprc", "w") as conf:

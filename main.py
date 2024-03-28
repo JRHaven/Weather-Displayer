@@ -18,7 +18,7 @@ Weather-Displayer. If not, see <https://www.gnu.org/licenses/>.
 '''
 
 from time import sleep
-import json, os, sys, math, time, threading, urllib.request, socket, web
+import json, os, math, time, threading, urllib.request, socket, web
 
 # We're going to need to create a start-time variable to calculate uptime for logging purposes
 startTime = time.time()
@@ -35,12 +35,18 @@ startTime = time.time()
 3: Cannot retrieve hourly weather JSON data, this will quit the getter
 4: The date on the JSON timestamp does not match today's date. This is not a critical error; will not quit the getter.
 5: New JSON!
+6: 404 error encountered. This would mean the provided url is incorrect, this will quit the getter.
+7: 503 error encountered. If crashOnHTTPError is set to True, this will quit the getter. If not, it will be handled by main().
+8: Needed backups don't exist, this will quit the getter
+9: Excessive 500 errors, this will quit the getter if configured to do so.
+10: Encountered json.decoder.JSONDecodeError. This almost certainly means the user provided the wrong url, this will quit the getter
 
 """
+
+# Global variables that should be accessible to both threads
 getterCode = 0
 getterRun = 1
-
-# Global variable to determine whether the web interface should run
+crashOnHTTPError = True
 webInterface = False
 
 # Function to write to log file
@@ -65,8 +71,33 @@ def permGrant(myName, file, serverEnabled=False):
         except FileNotFoundError:
             log(myName, file + " vanished! Permissions could not be granted. Moving on!")
 
+# I need to refactor my code lol
+def criticalHTTPErrorHandler(myName: str, errorCode: int):
+    global crashOnHTTPError, getterCode
+    if(crashOnHTTPError):
+        if(errorCode == 500):
+            log(myName, "Too many 500 errors! There\'s something deeper going on. Configured to crash. Notifying main and quitting!")
+            getterCode = 9
+        else:
+            log(myName, "HTTP " + str(errorCode) + " Error. Configured to crash. Notifying main and quitting!")
+            getterCode = 7
+
+    else:
+        if(errorCode == 500):
+            log(myName, "Too many 500 errors! There\'s something deeper going on. Configured to continue. Implementing backups if they exist...")
+            getterCode = 9
+        else:
+            log(myName, "HTTP " + str(errorCode) + " Error. Configured to continue. Implementing backups if they exist...")
+
+        if(os.path.exists("weatherCache-bk.json") and os.path.exists("hourWeatherCache-bk.json")):
+            os.rename("weatherCache-bk.json", "weatherCache.json")
+            os.rename("hourWeatherCache-bk.json", "hourWeatherCache.json")
+        else:
+            log(myName, "CRITICAL ERROR! No or incomplete weather backups to display! Quitting, there is nothing to do!")
+            getterCode = 8
+
 def getter():
-    global getterCode
+    global getterCode, crashOnHTTPError
 
     # Set this variable for easy identification for logging purposes
     myName = "GETTER"
@@ -83,6 +114,7 @@ def getter():
         log(myName, "...Exists! Loading NWS URL")
         with open("url", "r") as destFile:
             dest = destFile.read()
+            destFile.close()
     else:
         # The file doesn't exist. Log this occasion and tell main.py to inform and quit
         log(myName, "ERROR: URL File doesn't exist! Informing and Quitting!")
@@ -93,13 +125,17 @@ def getter():
         dest = dest[:-1]
 
     while(True):
-        # Use this variable to find out if we failed to download data or not
-        fail = False
-
+        # Counter for cooldown if need be
+        counter = 0
         log(myName, "Attempting to retrieve JSON from NWS API...")
 
         # Loop to continue trying to download things in case we get a 500 error
         while(True):
+            counter += 1
+            # If it's been more than 10 tries and we haven't gotten anywhere, we need to give it a break.
+            if(counter > 10):
+                criticalHTTPErrorHandler(myName, 500)
+                break
             try:
                 with urllib.request.urlopen(dest) as url:
                     data = json.loads(url.read().decode())
@@ -119,7 +155,6 @@ def getter():
                 log(myName, "NWS Provided hourly JSON on " + str(hourData["properties"]["generatedAt"]))
 
                 if(today not in longGenDate):
-                    fail = True
                     log(myName, "ERROR! The NWS provided out of date information for some reason. Waiting some time, then trying again...")
                     # If this is our first time running this script, we should find something to display.
                     # If there is a backup, use that. If not, inform the main script.
@@ -131,40 +166,41 @@ def getter():
                         
                     sleep(300)
                     getterCode = 0
-                    continue
+                    #continue
                 else:
                     # Use global variable webInterface
                     global webInterface
                     with open("weatherCache.json", "w") as dumpFile:
                         json.dump(data, dumpFile)
                         dumpFile.close()
-                        log(myName, "Dumping long-term JSON to file, weatherCache.json")
+                    log(myName, "Dumped long-term JSON to file, weatherCache.json")
 
-                        # Permissions! This is probably going to be run as sudo.
-                        permGrant(myName, "weatherCache.json", webInterface)
+                    # Permissions! This is probably going to be run as sudo.
+                    permGrant(myName, "weatherCache.json", webInterface)
                 
                     with open("hourWeatherCache.json", "w") as hourDumbFile:
                         json.dump(hourData, hourDumbFile)
                         dumpFile.close()
-                        log(myName, "Dumping hourly JSON to file, hourWeatherCache.json")
+                    log(myName, "Dumped hourly JSON to file, hourWeatherCache.json")
 
-                        # Permissions! This is probably going to be run as sudo.
-                        permGrant(myName, "hourWeatherCache.json", webInterface)
-                    
-                    # Let main know that we have retrieved JSON
-                    getterCode = 5
-                    log(myName, "JSON all dealt with here! Getter code set to value of 5...")
-                    # Tell main that we are now waiting for the next thing, after a second delay
-                    sleep(1)
-                    getterCode = 0
-                    log(myName, "Reset Getter code to value of 0: waiting...")
+                    # Permissions! This is probably going to be run as sudo.
+                    permGrant(myName, "hourWeatherCache.json", webInterface)
                 break
             except urllib.error.HTTPError as e:
-                # We've gotten a 500 error. This goes away after a second or so, so let's try again
-                # Report to log
-                log(myName, "HTML Error, probably a 500 error. Trying again. The next few lines is the error info.")
-                log(myName, str(e))
-                sleep(1)
+                # We can handle this in different ways depending on the HTTP error given. 500 errors we can handle
+                # by trying again in a couple seconds. 404 errors mean that the url is wrong, report to user.
+                # 503 errors we need to immediately stop everything as to not bog down the NWS's server.
+                if(e.code == 500):
+                    log(myName, "HTTP 500 Error. Trying again...")
+                    sleep(1)
+                    continue
+                elif(e.code == 404):
+                    log(myName, "HTTP 404 Error. Notifying main and quitting!")
+                    getterCode = 6
+                    break
+                elif(e.code == 503):
+                    criticalHTTPErrorHandler(myName, 503)
+                    break
             # This error occurs if there it cannot resolve the URL, meaning no internet access
             # If there is backup info (which there should be), rename it so that it is avalible
             # to be used
@@ -172,7 +208,7 @@ def getter():
                 # Report to the log
                 log(myName, "URL Error. Could be for a multitude of reasons. The next few lines are error info.")
                 log(myName, str(e))
-                fail = True
+                
                 print("Could not connect to the NWS to download new data.")
                 print("Making backups avalible...")
                 if(os.path.exists("weatherCache-bk.json") == True):
@@ -180,10 +216,9 @@ def getter():
                     log(myName, "Got temporary long-term info from a backup.")
                 else:
                     if(os.path.exists("weatherCache.json") == False):
-                        print("Oops! There's no data to use! Quit this program, check the internet connection, and try again! Exiting...")
                         log(myName, "CRITICAL ERROR! No long-term backup info to display! Quitting, there is nothing to do!")
                         getterCode = 2
-                        exit(0)
+                        break
                     else:
                         log(myName, "Long-Term backups were avalible, using those. Nothing to do now until next cycle.")
                         print("Backups for one weather script is already avalible. There is nothing to do.")
@@ -193,17 +228,32 @@ def getter():
                     log(myName, "Got temporary hourly info from a backup.")
                 else:
                     if(os.path.exists("hourWeatherCache.json") == False):
-                        print("Oops! There's no data to use! Quit this program, check the internet connection, and try again! Exiting...")
                         log(myName, "CRITICAL ERROR! No hourly backup info to display! Quitting, there is nothing to do!")
                         getterCode = 3
-                        exit(0)
                     else:
                         print("Backups for one weather script is already avalible. There is nothing to do.")
                         log(myName, "Hourly backups were avalible, using those. Nothing to do now until next cycle.")
                 break
+            except json.decoder.JSONDecodeError:
+                log(myName, "Encountered JSON decode error. Informing main and quitting...")
+                getterCode = 10
+                break
             begin = False
 
-        sleep(900)
+        # Handle errors, so that we quit this thread if need be
+        if(getterCode > 0 and (getterCode < 4 or getterCode > 5)):
+            break
+        else:
+            # Let main know that we have retrieved JSON
+            print(getterCode)
+            getterCode = 5
+            log(myName, "JSON all dealt with here! Getter code set to value of 5...")
+            # Tell main that we are now waiting for the next thing, after a second delay
+            sleep(1)
+            getterCode = 0
+            log(myName, "Reset Getter code to value of 0: waiting...")
+            sleep(900)
+        
 
 def initConfig():
     with open(".weatherdisprc", "w") as conf:
@@ -215,30 +265,40 @@ def initConfig():
 # -------- GENERAL CONFIG --------
 # This is the main area for configuring the main, integral parts of Weather-Displayer.
 #
-# web-server:   Turning this on will enable the web-based interface. Weather-Displayer uses Python's Flask library
-#               to run such an interface. You can go to the computer's IP address (displayed on screen) from a browser
-#               to see the interface when enabled, as long as the computer accessing the interface is on the same network
-#               as this computer.
+# web-server:         Turning this on will enable the web-based interface. Weather-Displayer uses Python's Flask library
+#                     to run such an interface. You can go to the computer's IP address (displayed on screen) from a browser
+#                     to see the interface when enabled, as long as the computer accessing the interface is on the same network
+#                     as this computer.
 #
-# main-display: Determins whether Weather-Displayer will print out info to the terminal. There will still be text from the
-#               getter and maybe from Flask, but there will be no weather info. If both main-display and web-server are
-#               turned off, only the getter function will be operational.
+# main-display:       Determins whether Weather-Displayer will print out info to the terminal. There will still be text from the
+#                     getter and maybe from Flask, but there will be no weather info. If both main-display and web-server are
+#                     turned off, only the getter function will be operational.
 #
-#               If you are seeing this on a freshly generated config file, main-display is commented out and will not
-#               do anything. I plan on making it functional soon, but right now I'm working on other things.
+#                     If you are seeing this on a freshly generated config file, main-display is commented out and will not
+#                     do anything. I plan on making it functional soon, but right now I'm working on other things.
 #
-# show-IP:      Determins whether the system's IP Address be displayed. Will be displayed at the top of the terminal
-#               on each update, similar to what happens when web-server is enabled. If both show-IP and web-server are enabled,
-#               web-server's display rules takes precedence.
+# show-IP:            Determins whether the system's IP Address be displayed. Will be displayed at the top of the terminal
+#                     on each update, similar to what happens when web-server is enabled. If both show-IP and web-server are enabled,
+#                     web-server's display rules takes precedence.
 #
-# time:         Determmins if a clock should be displayed. Options include:
-#               0: Don't show clock (default)
-#               1: Show a clock - use 12 hour format
-#               2: Show a clock - use 24 hour format
+# time:               Determmins if a clock should be displayed. Options include:
+#                     0: Don't show clock (default)
+#                     1: Show a clock - use 12 hour format
+#                     2: Show a clock - use 24 hour format
+#
+# stop-on-http-error: Determins how to handle fatal HTTP errors. Such errors include 503 and excessive 500 errors. 503 errors
+#                     mean that the NWS is working on a solution, thus Weather-Displayer should not continue to request data out
+#                     of courtesy to NWS API maintainers. These errors may also last anywhere from an hour or two to days or
+#                     weeks. Many 500 errors vanish after waiting a couple seconds, but in other circumstances they may last
+#                     longer that this, and should be treated similar to a 503 error. There are 2 ways to handle these:
+#                        - Stop Weather-Displayer with a message explaining the situation (default)
+#                        - Show backup (but more outdated as time goes on) JSON data. This soulution does not include a message
+#                          to the user.
 web-server=0
 #main-display=1
 show-IP=0
 time=0
+stop-on-http-error=1
 
 # -------- WEB INTERFACE CONFIG --------
 # This is the area where we will configure the web interface.
@@ -494,13 +554,20 @@ def getIP(network):
     # Return the local IP address as a string
     return ip
 
+def errorMsg(logMsg: str, msg: str):
+    myName = "MAIN  "
+    log(myName, logMsg)
+    os.system("clear")
+    print(msg)
+    input("Press enter to exit...")
+    log(myName, "Quitting with exit value of 1!")
+    return 1
+
 def main():
-    global getterCode
+    global getterCode, crashOnHTTPError
     try:
         # Identify ourselves in logging
         myName = "MAIN  "
-
-        # Let the log know that main.py was started properly.
         log(myName, "Displayer Started.")
 
         # If the config file doesn't exist, initialize!
@@ -527,10 +594,11 @@ def main():
                     tweaks[element[0]] = 0
             config.close()
         
-        # Set global variable webInterface so that getter will know whether to change file permissions, and for
+        # Identify global variable webInterface so that getter will know whether to change file permissions, and for
         # a more reliable way of checking if the web interface is enabled
         global webInterface
-        # Use try to detect a KeyError
+
+        # Use try statement to detect a KeyError
         try:
             if(tweaks["web-server"] == 1):
                 webInterface = True
@@ -541,6 +609,12 @@ def main():
         except KeyError:
             log(myName, "web-server variable not found in config file! Keeping webInterface set to false.")
         
+        if("stop-on-http-error" in tweaks):
+            if(tweaks["stop-on-http-error"] == 0):
+                crashOnHTTPError = False
+        else:
+            log(myName, "stop-on-http-error variable not found in config file! Keeping crashOnHTTPError set to true.")
+
         # Ensure time variable is initialized
         if("time" not in tweaks):
             tweaks["time"] = 0
@@ -579,32 +653,50 @@ def main():
                 sleep(300)
             elif(getterCode == 1):
                 # There is no URL File
-                log(myName, "Recieved No URL Message...")
-                print("\nERROR: Could not find the NWS Destination URL!")
-                print("If this is your first time running the script, you may have not\nput in the \
+                return errorMsg("Recieved No URL Message...", \
+                    "\nERROR: Could not find the NWS Destination URL!\n\
+If this is your first time running the script, you may have not\nput in the \
 destination URL. If you don't know how to do this,\ngo to https://github.com/JR-Tech-and-Software/Weather-Displayer\n\
 and read the README.md file to explain the steps to do this.")
-                input("Press enter to exit...")
-                return 1
             elif(getterCode == 2):
                 # Critical error, couldn't retrieve general weather data.
-                # Getter already prints out handy dandy message, just prompt user to quit
-                log(myName, "Recieved getterCode 2. Prompting user to quit...")
-                sleep(0.1)
-                input("Press enter to exit...")
-                log(myName, "Quitting with exit value of 1!")
-                return 1
+                return errorMsg("Recieved getterCode 2. Prompting user to quit...", \
+                    "Could not retrieve general weather data.\nWeather-Displayer cannot continue.")
             elif(getterCode == 3):
                 # Similar error, handled in the exact same way
-                log(myName, "Recieved getterCode 3. Prompting user to quit...")
-                sleep(0.1)
-                input("Press enter to exit...")
-                log(myName, "Quitting with exit value of 1!")
-                return 1
+                return errorMsg("Recieved getterCode 3. Prompting user to quit...", \
+                    "Could not retrieve hourly weather data.\nWeather-Displayer cannot continue.")
             elif(getterCode == 5):
                 # Data recieved. Let the log know!
                 log(myName, "Recieved JSON. Ready to display...")
                 break
+            elif(getterCode == 6):
+                # Encountered 404 error
+                return errorMsg("Recieved message of 404 error. Telling user and quitting...",\
+                    "Recieved a 404 error. This likely means the url given \
+in the url file is incorrect.\n\
+Retry the process of finding the API URL and try again.")
+            elif(getterCode == 7):
+                # Encountered 503 error
+                return errorMsg("Recieved message of 503 error. Telling the user and quitting...", \
+                    "Recieved a 503 error. This is an error on the NWS end, usually\n\
+meaning the server down, possibly under maintenance.\n\
+Weather-Displayer cannot continue. Try again in a few hours.")
+            elif(getterCode == 8):
+                return errorMsg("Recieved message on lack of backups. Telling the user and quitting...", \
+                    "Was unable to acquire needed backups to sort out an error.\nWeather-Displayer cannot continue.")
+            elif(getterCode == 9):
+                return errorMsg("Recieved message of excessive 500 errors. Telling the user and quitting...", \
+                    "Recieved too many 500 errors. Usually these clear after a couple seconds,\n\
+but not now. This is a NWS issue. Weather-Displayer cannot continue.\n\
+Try again in a couple hours.")
+            elif(getterCode == 10):
+                return errorMsg("Recieved message of decode error. Telling user and quitting...", \
+                    "Encountered JSON decode error. This is likely the\nresult of an incorrect url.\n\
+Retry the process of finding the API URL and try again.")
+            
+            # wait so we don't destroy cpu fan lol
+            sleep(0.01)
         
         # Calculate IP if webInterface or show-IP is enabled
         if(webInterface or (showIP == 1)):
@@ -624,8 +716,10 @@ and read the README.md file to explain the steps to do this.")
             try:
                 with open("weatherCache.json", "r") as theData:
                     data = json.load(theData)
+                    theData.close()
                 with open("hourWeatherCache.json", "r") as theData:
                     hourData = json.load(theData)
+                    theData.close()
                 break
             except json.decoder.JSONDecodeError as e:
                 log(myName, "Couldn't decode the JSON. Trying again. Next few lines contain error information.")
@@ -743,8 +837,10 @@ and read the README.md file to explain the steps to do this.")
                         try:
                             with open("weatherCache.json", "r") as theData:
                                 data = json.load(theData)
+                                theData.close()
                             with open("hourWeatherCache.json", "r") as theData:
                                 hourData = json.load(theData)
+                                theData.close()
                             break
                         except json.decoder.JSONDecodeError as e:
                             log(myName, "Couldn't decode the JSON. Trying again. Next few lines contain error information.")

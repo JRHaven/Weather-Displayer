@@ -294,11 +294,17 @@ def initConfig():
 #                        - Stop Weather-Displayer with a message explaining the situation (default)
 #                        - Show backup (but more outdated as time goes on) JSON data. This soulution does not include a message
 #                          to the user.
+#
+# close-timer:       Determins whether the program should wait for user input to close after a crash. Because of important
+#                    information to be displayed, the default value is 0. However, especailly in headless environments it
+#                    may be desirable for the program to close automatically. In this usecase, the value should be changed
+#                    to 1. The program will wait 60 seconds before closing automatically with an exit code of 1.
 web-server=0
 #main-display=1
 show-IP=0
 time=0
 stop-on-http-error=1
+close-timer=0
 
 # -------- WEB INTERFACE CONFIG --------
 # This is the area where we will configure the web interface.
@@ -554,18 +560,24 @@ def getIP(network):
     # Return the local IP address as a string
     return ip
 
-def errorMsg(logMsg: str, msg: str):
+def errorMsg(logMsg: str, msg: str, useTimer=0):
     myName = "MAIN  "
     log(myName, logMsg)
     os.system("clear")
     print(msg)
-    input("Press enter to exit...")
+    
+    if(useTimer == 1):
+        log(myName, "Configured to quit automatically. Will close in 60 seconds.")
+        sleep(60)
+    else:
+        input("Press enter to exit...")
+    
     log(myName, "Quitting with exit value of 1!")
     return 1
 
 
 # Check for problematic getter codes function. For use in main() only
-def checkForIssues():
+def checkForIssues(useTimer=0):
     # Checking the global getterCode variable will be necessary.
     global getterCode
     if(getterCode == 4):
@@ -577,35 +589,34 @@ def checkForIssues():
     elif(getterCode == 2):
         # Critical error, couldn't retrieve general weather data.
         return errorMsg("Recieved getterCode 2. Prompting user to quit...", \
-            "Could not retrieve general weather data.\nWeather-Displayer cannot continue.")
+            "Could not retrieve general weather data.\nWeather-Displayer cannot continue.", useTimer)
     elif(getterCode == 3):
         # Similar error, handled in the exact same way
         return errorMsg("Recieved getterCode 3. Prompting user to quit...", \
-            "Could not retrieve hourly weather data.\nWeather-Displayer cannot continue.")
+            "Could not retrieve hourly weather data.\nWeather-Displayer cannot continue.", useTimer)
     elif(getterCode == 6):
         # Encountered 404 error
         return errorMsg("Recieved message of 404 error. Telling user and quitting...",\
             "Recieved a 404 error. This likely means the url given \
-in the url file is incorrect.\n\
-Retry the process of finding the API URL and try again.")
+in the url file is incorrect.\nRetry the process of finding the API URL and try again.", useTimer)
     elif(getterCode == 7):
         # Encountered 503 error
         return errorMsg("Recieved message of 503 error. Telling the user and quitting...", \
             "Recieved a 503 error. This is an error on the NWS end, usually\n\
 meaning the server down, possibly under maintenance.\n\
-Weather-Displayer cannot continue. Try again in a few hours.")
+Weather-Displayer cannot continue. Try again in a few hours.", useTimer)
     elif(getterCode == 8):
         return errorMsg("Recieved message on lack of backups. Telling the user and quitting...", \
-            "Was unable to acquire needed backups to sort out an error.\nWeather-Displayer cannot continue.")
+            "Was unable to acquire needed backups to sort out an error.\nWeather-Displayer cannot continue.", useTimer)
     elif(getterCode == 9):
         return errorMsg("Recieved message of excessive 500 errors. Telling the user and quitting...", \
             "Recieved too many 500 errors. Usually these clear after a couple seconds,\n\
 but not now. This is a NWS issue. Weather-Displayer cannot continue.\n\
-Try again in a couple hours.")
+Try again in a couple hours.", useTimer)
     elif(getterCode == 10):
         return errorMsg("Recieved message of decode error. Telling user and quitting...", \
             "Encountered JSON decode error. This is likely the\nresult of an incorrect url.\n\
-Retry the process of finding the API URL and try again.")
+Retry the process of finding the API URL and try again.", useTimer)
 
 def main():
     global getterCode, crashOnHTTPError
@@ -691,14 +702,25 @@ def main():
             # Check for various getter messages
             if(getterCode == 1):
                 # There is no URL File
-                return errorMsg("Recieved No URL Message...", \
-                    "\nERROR: Could not find the NWS Destination URL!\n\
+                if("close-timer" in tweaks):
+                    return errorMsg("Recieved No URL Message...", \
+                        "\nERROR: Could not find the NWS Destination URL!\n\
+If this is your first time running the script, you may have not\nput in the \
+destination URL. If you don't know how to do this,\ngo to https://github.com/JR-Tech-and-Software/Weather-Displayer\n\
+and read the README.md file to explain the steps to do this.", tweaks["close-timer"])
+                else:
+                    return errorMsg("Recieved No URL Message...", \
+                        "\nERROR: Could not find the NWS Destination URL!\n\
 If this is your first time running the script, you may have not\nput in the \
 destination URL. If you don't know how to do this,\ngo to https://github.com/JR-Tech-and-Software/Weather-Displayer\n\
 and read the README.md file to explain the steps to do this.")
 
             # Check for getter errors, return the value if there is a value to return
-            issuesCode = checkForIssues()
+            if("close-timer" in tweaks):
+                issuesCode = checkForIssues(tweaks["close-timer"])
+            else:
+                issuesCode = checkForIssues()
+            
             if(issuesCode != None):
                 return issuesCode
 

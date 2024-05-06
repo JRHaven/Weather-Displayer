@@ -563,6 +563,50 @@ def errorMsg(logMsg: str, msg: str):
     log(myName, "Quitting with exit value of 1!")
     return 1
 
+
+# Check for problematic getter codes function. For use in main() only
+def checkForIssues():
+    # Checking the global getterCode variable will be necessary.
+    global getterCode
+    if(getterCode == 4):
+        # We've found out that the data we got is out of data, and we have no backups!
+        # Display something!
+        log(myName, "Recieved Out of Date Message")
+        os.system("cowsay -d \"Inaccurate Data\"")
+        sleep(300)
+    elif(getterCode == 2):
+        # Critical error, couldn't retrieve general weather data.
+        return errorMsg("Recieved getterCode 2. Prompting user to quit...", \
+            "Could not retrieve general weather data.\nWeather-Displayer cannot continue.")
+    elif(getterCode == 3):
+        # Similar error, handled in the exact same way
+        return errorMsg("Recieved getterCode 3. Prompting user to quit...", \
+            "Could not retrieve hourly weather data.\nWeather-Displayer cannot continue.")
+    elif(getterCode == 6):
+        # Encountered 404 error
+        return errorMsg("Recieved message of 404 error. Telling user and quitting...",\
+            "Recieved a 404 error. This likely means the url given \
+in the url file is incorrect.\n\
+Retry the process of finding the API URL and try again.")
+    elif(getterCode == 7):
+        # Encountered 503 error
+        return errorMsg("Recieved message of 503 error. Telling the user and quitting...", \
+            "Recieved a 503 error. This is an error on the NWS end, usually\n\
+meaning the server down, possibly under maintenance.\n\
+Weather-Displayer cannot continue. Try again in a few hours.")
+    elif(getterCode == 8):
+        return errorMsg("Recieved message on lack of backups. Telling the user and quitting...", \
+            "Was unable to acquire needed backups to sort out an error.\nWeather-Displayer cannot continue.")
+    elif(getterCode == 9):
+        return errorMsg("Recieved message of excessive 500 errors. Telling the user and quitting...", \
+            "Recieved too many 500 errors. Usually these clear after a couple seconds,\n\
+but not now. This is a NWS issue. Weather-Displayer cannot continue.\n\
+Try again in a couple hours.")
+    elif(getterCode == 10):
+        return errorMsg("Recieved message of decode error. Telling user and quitting...", \
+            "Encountered JSON decode error. This is likely the\nresult of an incorrect url.\n\
+Retry the process of finding the API URL and try again.")
+
 def main():
     global getterCode, crashOnHTTPError
     try:
@@ -643,60 +687,26 @@ def main():
         log(myName, "Tweaks Config right before display loop: " + str(tweaks))
 
         print("Waiting for data...")
-        while(True):
+        while(getterCode != 5):
             # Check for various getter messages
-            if(getterCode == 4):
-                # We've found out that the data we got is out of data, and we have no backups!
-                # Display something!
-                log(myName, "Recieved Out of Date Message")
-                os.system("cowsay -d \"Inaccurate Data\"")
-                sleep(300)
-            elif(getterCode == 1):
+            if(getterCode == 1):
                 # There is no URL File
                 return errorMsg("Recieved No URL Message...", \
                     "\nERROR: Could not find the NWS Destination URL!\n\
 If this is your first time running the script, you may have not\nput in the \
 destination URL. If you don't know how to do this,\ngo to https://github.com/JR-Tech-and-Software/Weather-Displayer\n\
 and read the README.md file to explain the steps to do this.")
-            elif(getterCode == 2):
-                # Critical error, couldn't retrieve general weather data.
-                return errorMsg("Recieved getterCode 2. Prompting user to quit...", \
-                    "Could not retrieve general weather data.\nWeather-Displayer cannot continue.")
-            elif(getterCode == 3):
-                # Similar error, handled in the exact same way
-                return errorMsg("Recieved getterCode 3. Prompting user to quit...", \
-                    "Could not retrieve hourly weather data.\nWeather-Displayer cannot continue.")
-            elif(getterCode == 5):
-                # Data recieved. Let the log know!
-                log(myName, "Recieved JSON. Ready to display...")
-                break
-            elif(getterCode == 6):
-                # Encountered 404 error
-                return errorMsg("Recieved message of 404 error. Telling user and quitting...",\
-                    "Recieved a 404 error. This likely means the url given \
-in the url file is incorrect.\n\
-Retry the process of finding the API URL and try again.")
-            elif(getterCode == 7):
-                # Encountered 503 error
-                return errorMsg("Recieved message of 503 error. Telling the user and quitting...", \
-                    "Recieved a 503 error. This is an error on the NWS end, usually\n\
-meaning the server down, possibly under maintenance.\n\
-Weather-Displayer cannot continue. Try again in a few hours.")
-            elif(getterCode == 8):
-                return errorMsg("Recieved message on lack of backups. Telling the user and quitting...", \
-                    "Was unable to acquire needed backups to sort out an error.\nWeather-Displayer cannot continue.")
-            elif(getterCode == 9):
-                return errorMsg("Recieved message of excessive 500 errors. Telling the user and quitting...", \
-                    "Recieved too many 500 errors. Usually these clear after a couple seconds,\n\
-but not now. This is a NWS issue. Weather-Displayer cannot continue.\n\
-Try again in a couple hours.")
-            elif(getterCode == 10):
-                return errorMsg("Recieved message of decode error. Telling user and quitting...", \
-                    "Encountered JSON decode error. This is likely the\nresult of an incorrect url.\n\
-Retry the process of finding the API URL and try again.")
-            
+
+            # Check for getter errors, return the value if there is a value to return
+            issuesCode = checkForIssues()
+            if(issuesCode != None):
+                return issuesCode
+
             # wait so we don't destroy cpu fan lol
             sleep(0.01)
+        
+        # Data recieved. Let the log know!
+        log(myName, "Recieved JSON. Ready to display...")
         
         # Calculate IP if webInterface or show-IP is enabled
         if(webInterface or (showIP == 1)):

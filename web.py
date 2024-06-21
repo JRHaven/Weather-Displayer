@@ -478,7 +478,7 @@ def display():
     global data, hourData
     log("Displaying main forecast page")
     currentWeather = [data["properties"]["periods"][0]["shortForecast"], hourData["properties"]["periods"][0]["temperature"], hourData["properties"]["periods"][0]["temperatureUnit"], data["properties"]["periods"][0]["detailedForecast"],\
-        hourData["properties"]["periods"][0]["relativeHumidity"]["value"], artDisplay(data["properties"]["periods"][0]["shortForecast"])]
+        artDisplay(data["properties"]["periods"][0]["shortForecast"])]
     return flask.render_template("template.htm", currentWeather=currentWeather, title=getTitles(data), shortDesc=getShortForecasts(data),\
         temp=getTemps(data), longDesc=getDetailForecasts(data))
 
@@ -496,7 +496,7 @@ def hourly():
     global hourlData
     log("Displaying hourly page")
     return flask.render_template("allinfo.htm", title=getTitles(hourData), shortDesc=getShortForecasts(hourData), temp=getTemps(hourData),\
-        longDesc=getDetailForecasts(hourData), humid=getHumidity(hourData), unit=hourData["properties"]["periods"][0]["temperatureUnit"])
+        longDesc=getDetailForecasts(hourData), unit=hourData["properties"]["periods"][0]["temperatureUnit"])
 
 def main(port):
     # Get our things

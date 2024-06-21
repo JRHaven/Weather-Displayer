@@ -237,8 +237,6 @@ Weather-Displayer. If not, see <https://www.gnu.org/licenses/>.
         </div>
         <p>
             {{currentWeather[3]}}
-            <br><br>
-            Humidity: {{currentWeather[4]}}%
         </p>
     </div>
     <br>
@@ -256,8 +254,6 @@ Weather-Displayer. If not, see <https://www.gnu.org/licenses/>.
             <h4 id="temp">{{ temp[i] }}&deg;{{currentWeather[2]}}</h4>
             <p>
                 {{ longDesc[i] }}
-                <br><br>
-                Humidity: {{ humid[i] }}%
             </p>
         </div>
         {% if i < 3 %}
@@ -289,6 +285,7 @@ details.
 You should have received a copy of the GNU General Public License along with 
 Weather-Displayer. If not, see <https://www.gnu.org/licenses/>. 
 -->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -326,10 +323,7 @@ Weather-Displayer. If not, see <https://www.gnu.org/licenses/>.
             <p>
                 {% if longDesc[i] != "" %}
                 {{ longDesc[i] }}
-                <br><br>
                 {% endif %}
-                
-                Humidity: {{ humid[i] }}%
             </p>
         </div>
         {% if i < title|length - 1 %}
@@ -471,12 +465,6 @@ def getDetailForecasts(data):
     for i in periods:
         forecasts.append(i["detailedForecast"])
     return forecasts
-def getHumidity(data):
-    periods = data["properties"]["periods"]
-    forecasts = []
-    for i in periods:
-        forecasts.append(i["relativeHumidity"]["value"])
-    return forecasts
 def getTitles(data):
     periods = data["properties"]["periods"]
     forecasts = []
@@ -492,7 +480,7 @@ def display():
     currentWeather = [data["properties"]["periods"][0]["shortForecast"], hourData["properties"]["periods"][0]["temperature"], hourData["properties"]["periods"][0]["temperatureUnit"], data["properties"]["periods"][0]["detailedForecast"],\
         hourData["properties"]["periods"][0]["relativeHumidity"]["value"], artDisplay(data["properties"]["periods"][0]["shortForecast"])]
     return flask.render_template("template.htm", currentWeather=currentWeather, title=getTitles(data), shortDesc=getShortForecasts(data),\
-        temp=getTemps(data), longDesc=getDetailForecasts(data), humid=getHumidity(data))
+        temp=getTemps(data), longDesc=getDetailForecasts(data))
 
 @iamweb.route("/full")
 def fullForecast():
@@ -500,7 +488,7 @@ def fullForecast():
     global data
     log("Displaying full forecast page")
     return flask.render_template("allinfo.htm", title=getTitles(data), shortDesc=getShortForecasts(data), temp=getTemps(data),\
-        longDesc=getDetailForecasts(data), humid=getHumidity(data), unit=hourData["properties"]["periods"][0]["temperatureUnit"])
+        longDesc=getDetailForecasts(data), unit=hourData["properties"]["periods"][0]["temperatureUnit"])
 
 @iamweb.route("/hourly")
 def hourly():

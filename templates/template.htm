@@ -34,12 +34,12 @@ Weather-Displayer. If not, see <https://www.gnu.org/licenses/>.
     <div id="current-conditions">
         <div id="inline">
             <div id="image">
-                <pre>{{ currentWeather[5] }}</pre>
+                <pre>{{ currentWeather[4] }}</pre>
                 <h2 id="currentForecast">{{ currentWeather[0] }}</h2>
             </div>
             <h3 id="temp">{{ currentWeather[1] }}&deg;{{currentWeather[2]}}</h3>
         </div>
-        <p>
+        <p style="clear:both;">
             {{currentWeather[3]}}
         </p>
     </div>
@@ -66,6 +66,6 @@ Weather-Displayer. If not, see <https://www.gnu.org/licenses/>.
         {% endfor %}
     </div>
 
-    <div id="fullCenter"><p><a href="{{ url_for('fullForecast') }}">Show Full Forecast</a> | <a href="{{ url_for('hourly') }}">Show Hourly Forecast</a></p></div>
+    <div id="fullCenter" style="clear:both;"><p><a href="{{ url_for('fullForecast') }}">Show Full Forecast</a> | <a href="{{ url_for('hourly') }}">Show Hourly Forecast</a></p></div>
 </body>
 </html>

@@ -31,9 +31,7 @@ div {
 }
 
 div#outlook{
-    padding-top:0px;
-    padding-bottom:0px;
-    display:flex;
+    padding:0px;
 }
 
 div#future{
@@ -41,8 +39,9 @@ div#future{
     padding-left:2%;
     padding-right:2%;
     vertical-align:center;
-    width:21%;
+    width:20.4%;
     margin:0px;
+    float:left;
 }
 
 div#horr-future{
@@ -59,6 +58,8 @@ div#divider{
     background-color:rgb(181, 181, 181);
     outline:0px;
     padding:1px;
+    float: left;
+    margin-top:50px;
 }
 
 div#horr-divider{
@@ -84,17 +85,20 @@ div#current-conditions{
 
 div#inline{
     outline:none;
-    vertical-align: center;
-    display:flex;
+    margin: 0 auto;
+    width: 50%;
+    padding:0;
 }
 
 div#image{
     outline:none;
-    margin-left:30%;
+    float:left;
 }
 
 h3#temp{
     font-size:18pt;
+    margin-top:85px;
+    width: 80px;
 }
 
 h4#temp{
@@ -113,10 +117,6 @@ div#fullOutlook{
     flex-direction:column;
     justify-content:center;
     align-items:center;
-}
-
-h2#currentForecast{
-    padding-left:5%;
 }
 
 div#fullCenter{

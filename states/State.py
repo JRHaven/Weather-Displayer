@@ -1,5 +1,5 @@
 '''
-self file is part of Weather-Displayer.
+This file is part of Weather-Displayer.
 
 Weather-Displayer is free software: you can redistribute it and/or modify 
 it under the terms of the GNU General Public License as published by the Free 
@@ -50,7 +50,7 @@ class State:
 
     # What to do on error
     @abstractmethod
-    def errorHandler(self):
+    def handleError(self):
         pass
 
 

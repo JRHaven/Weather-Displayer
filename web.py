@@ -438,7 +438,7 @@ iamweb = flask.Flask(__name__, static_folder="static", template_folder="template
 def getInfo():
     global data, hourData, logger
     # Get JSON
-    logger.log("Getting weather info...")
+    logger.log("WEB      ", "Getting weather info...")
     jsonData = getJSON()
     data = jsonData[0]
     hourData = jsonData[1]
@@ -473,7 +473,7 @@ def getTitles(data):
 def display():
     # Use global weather data, logger
     global data, hourData, logger
-    logger.log("Displaying main forecast page")
+    logger.log("WEB      ", "Displaying main forecast page")
     currentWeather = [data["properties"]["periods"][0]["shortForecast"], hourData["properties"]["periods"][0]["temperature"], hourData["properties"]["periods"][0]["temperatureUnit"], data["properties"]["periods"][0]["detailedForecast"],\
         artDisplay(data["properties"]["periods"][0]["shortForecast"])]
     return flask.render_template("template.htm", currentWeather=currentWeather, title=getTitles(data), shortDesc=getShortForecasts(data),\
@@ -483,7 +483,7 @@ def display():
 def fullForecast():
     # Only use general data - use global variable, as well as logger
     global data, logger
-    logger.log("Displaying full forecast page")
+    logger.log("WEB      ", "Displaying full forecast page")
     return flask.render_template("allinfo.htm", title=getTitles(data), shortDesc=getShortForecasts(data), temp=getTemps(data),\
         longDesc=getDetailForecasts(data), unit=hourData["properties"]["periods"][0]["temperatureUnit"])
 
@@ -491,21 +491,21 @@ def fullForecast():
 def hourly():
     # Only use hourly data - use global variable, as well as logger
     global hourlData, logger
-    logger.log("Displaying hourly page")
+    logger.log("WEB      ", "Displaying hourly page")
     return flask.render_template("allinfo.htm", title=getTitles(hourData), shortDesc=getShortForecasts(hourData), temp=getTemps(hourData),\
         longDesc=getDetailForecasts(hourData), unit=hourData["properties"]["periods"][0]["temperatureUnit"])
 
 def main(port, mainLogger: Logger):
+    # Register logger
+    global logger
+    logger = mainLogger
+    
     # Get our things
     initDirs()
     getInfo()
 
-    # Register logger
-    global logger
-    logger = mainLogger
-
     # Run flask in a seperate thread
-    logger.log("Creating and starting Flask thread with Debug false, host 0.0.0.0, port" + str(port) + ", and no reloader...")
+    logger.log("WEB      ", "Creating and starting Flask thread with Debug false, host 0.0.0.0, port" + str(port) + ", and no reloader...")
     flaskThread = threading.Thread(target=iamweb.run, kwargs={"debug":False, "host":"0.0.0.0", "port":port, "use_reloader":False})
     flaskThread.start()
 

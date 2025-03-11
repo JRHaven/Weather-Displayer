@@ -18,6 +18,7 @@ Weather-Displayer. If not, see <https://www.gnu.org/licenses/>.
 '''
 
 from time import sleep
+from Logger import Logger
 import json, os, math, time, threading, urllib.request, socket, web
 
 # We're going to need to create a start-time variable to calculate uptime for logging purposes
@@ -48,17 +49,7 @@ getterCode = 0
 getterRun = 1
 crashOnHTTPError = True
 webInterface = False
-
-# Function to write to log file
-def log(thread, msg):
-    logFile = open("log", "a")
-    logFile.write(thread + "   [" + str(f"{(time.time() - startTime):f}") + " - " + time.strftime("%m %d %H:%M:%S", time.localtime()) + "]: " + str(msg) + "\n")
-    logFile.close()
-
-    # Permissions! This is probably going to be run as sudo. Use global variable webInterface.
-    global webInterface
-    if(webInterface):
-        os.chmod("log", 0o777)
+logger = None
 
 # Deal with permissions only if web-server is enabled. If it is disabled, the program is probably not being run
 # as sudo and thus doesn't require changing file permissions.
@@ -96,28 +87,28 @@ def criticalHTTPErrorHandler(myName: str, errorCode: int):
             log(myName, "CRITICAL ERROR! No or incomplete weather backups to display! Quitting, there is nothing to do!")
             getterCode = 8
 
-def getter():
+def getter(logger: Logger):
     global getterCode, crashOnHTTPError
 
     # Set this variable for easy identification for logging purposes
     myName = "GETTER"
     # Report to log that script has been started
-    log(myName, "JSON Getter Started.")
+    logger.log(myName, "JSON Getter Started.")
 
     # Lets us know if it is our first run
     begin = True
 
     # We need to load in our NWS info provided by the user in a file. If it doesn't exist, tell the user
     # to get the correct url and provide it in the file
-    log(myName, "Locating URL File...")
+    logger.log(myName, "Locating URL File...")
     if(os.path.exists("url")):
-        log(myName, "...Exists! Loading NWS URL")
+        logger.log(myName, "...Exists! Loading NWS URL")
         with open("url", "r") as destFile:
             dest = destFile.read()
             destFile.close()
     else:
         # The file doesn't exist. Log this occasion and tell main.py to inform and quit
-        log(myName, "ERROR: URL File doesn't exist! Informing and Quitting!")
+        logger.log(myName, "ERROR: URL File doesn't exist! Informing and Quitting!")
         getterCode = 1
         exit(0)
 
@@ -127,7 +118,7 @@ def getter():
     while(True):
         # Counter for cooldown if need be
         counter = 0
-        log(myName, "Attempting to retrieve JSON from NWS API...")
+        logger.log(myName, "Attempting to retrieve JSON from NWS API...")
 
         # Loop to continue trying to download things in case we get a 500 error
         while(True):
@@ -146,16 +137,16 @@ def getter():
                     with urllib.request.urlopen(dest + "/hourly") as url:
                         hourData = json.loads(url.read().decode())
                 
-                log(myName, "JSON Data Successfully Retrieved.")
+                logger.log(myName, "JSON Data Successfully Retrieved.")
 
                 hourGenDate = str(hourData["properties"]["generatedAt"])
                 longGenDate = str(data["properties"]["generatedAt"])
                 today = time.strftime("%Y-%m-%d", time.gmtime())
-                log(myName, "NWS Provided long-term JSON on " + str(data["properties"]["generatedAt"]))
-                log(myName, "NWS Provided hourly JSON on " + str(hourData["properties"]["generatedAt"]))
+                logger.log(myName, "NWS Provided long-term JSON on " + str(data["properties"]["generatedAt"]))
+                logger.log(myName, "NWS Provided hourly JSON on " + str(hourData["properties"]["generatedAt"]))
 
                 if(today not in longGenDate):
-                    log(myName, "ERROR! The NWS provided out of date information for some reason. Waiting some time, then trying again...")
+                    logger.log(myName, "ERROR! The NWS provided out of date information for some reason. Waiting some time, then trying again...")
                     # If this is our first time running this script, we should find something to display.
                     # If there is a backup, use that. If not, inform the main script.
                     if((os.path.exists("hourWeatherCache-bk.json") == True) and (os.path.exists("weatherCache-bk.json") == True)):
@@ -173,7 +164,7 @@ def getter():
                     with open("weatherCache.json", "w") as dumpFile:
                         json.dump(data, dumpFile)
                         dumpFile.close()
-                    log(myName, "Dumped long-term JSON to file, weatherCache.json")
+                    logger.log(myName, "Dumped long-term JSON to file, weatherCache.json")
 
                     # Permissions! This is probably going to be run as sudo.
                     permGrant(myName, "weatherCache.json", webInterface)
@@ -181,7 +172,7 @@ def getter():
                     with open("hourWeatherCache.json", "w") as hourDumbFile:
                         json.dump(hourData, hourDumbFile)
                         dumpFile.close()
-                    log(myName, "Dumped hourly JSON to file, hourWeatherCache.json")
+                    logger.log(myName, "Dumped hourly JSON to file, hourWeatherCache.json")
 
                     # Permissions! This is probably going to be run as sudo.
                     permGrant(myName, "hourWeatherCache.json", webInterface)
@@ -191,11 +182,11 @@ def getter():
                 # by trying again in a couple seconds. 404 errors mean that the url is wrong, report to user.
                 # 503 errors we need to immediately stop everything as to not bog down the NWS's server.
                 if(e.code == 500):
-                    log(myName, "HTTP 500 Error. Trying again...")
+                    logger.log(myName, "HTTP 500 Error. Trying again...")
                     sleep(1)
                     continue
                 elif(e.code == 404):
-                    log(myName, "HTTP 404 Error. Notifying main and quitting!")
+                    logger.log(myName, "HTTP 404 Error. Notifying main and quitting!")
                     getterCode = 6
                     break
                 elif(e.code == 503):
@@ -206,36 +197,36 @@ def getter():
             # to be used
             except urllib.error.URLError as e:
                 # Report to the log
-                log(myName, "URL Error. Could be for a multitude of reasons. The next few lines are error info.")
-                log(myName, str(e))
+                logger.log(myName, "URL Error. Could be for a multitude of reasons. The next few lines are error info.")
+                logger.log(myName, str(e))
                 
                 print("Could not connect to the NWS to download new data.")
                 print("Making backups avalible...")
                 if(os.path.exists("weatherCache-bk.json") == True):
                     os.rename("weatherCache-bk.json", "weatherCache.json")
-                    log(myName, "Got temporary long-term info from a backup.")
+                    logger.log(myName, "Got temporary long-term info from a backup.")
                 else:
                     if(os.path.exists("weatherCache.json") == False):
-                        log(myName, "CRITICAL ERROR! No long-term backup info to display! Quitting, there is nothing to do!")
+                        logger.log(myName, "CRITICAL ERROR! No long-term backup info to display! Quitting, there is nothing to do!")
                         getterCode = 2
                         break
                     else:
-                        log(myName, "Long-Term backups were avalible, using those. Nothing to do now until next cycle.")
+                        logger.log(myName, "Long-Term backups were avalible, using those. Nothing to do now until next cycle.")
                         print("Backups for one weather script is already avalible. There is nothing to do.")
                 
                 if(os.path.exists("hourWeatherCache-bk.json") == True):
                     os.rename("hourWeatherCache-bk.json", "hourWeatherCache.json")
-                    log(myName, "Got temporary hourly info from a backup.")
+                    logger.log(myName, "Got temporary hourly info from a backup.")
                 else:
                     if(os.path.exists("hourWeatherCache.json") == False):
-                        log(myName, "CRITICAL ERROR! No hourly backup info to display! Quitting, there is nothing to do!")
+                        logger.log(myName, "CRITICAL ERROR! No hourly backup info to display! Quitting, there is nothing to do!")
                         getterCode = 3
                     else:
                         print("Backups for one weather script is already avalible. There is nothing to do.")
-                        log(myName, "Hourly backups were avalible, using those. Nothing to do now until next cycle.")
+                        logger.log(myName, "Hourly backups were avalible, using those. Nothing to do now until next cycle.")
                 break
             except json.decoder.JSONDecodeError:
-                log(myName, "Encountered JSON decode error. Informing main and quitting...")
+                logger.log(myName, "Encountered JSON decode error. Informing main and quitting...")
                 getterCode = 10
                 break
             begin = False
@@ -247,11 +238,11 @@ def getter():
             # Let main know that we have retrieved JSON
             print(getterCode)
             getterCode = 5
-            log(myName, "JSON all dealt with here! Getter code set to value of 5...")
+            logger.log(myName, "JSON all dealt with here! Getter code set to value of 5...")
             # Tell main that we are now waiting for the next thing, after a second delay
             sleep(1)
             getterCode = 0
-            log(myName, "Reset Getter code to value of 0: waiting...")
+            logger.log(myName, "Reset Getter code to value of 0: waiting...")
             sleep(900)
         
 
@@ -561,29 +552,30 @@ def getIP(network):
     return ip
 
 def errorMsg(logMsg: str, msg: str, useTimer=0):
+    global logger
     myName = "MAIN  "
-    log(myName, logMsg)
+    logger.log(myName, logMsg)
     os.system("clear")
     print(msg)
     
     if(useTimer == 1):
-        log(myName, "Configured to quit automatically. Will close in 60 seconds.")
+        logger.log(myName, "Configured to quit automatically. Will close in 60 seconds.")
         sleep(60)
     else:
         input("Press enter to exit...")
     
-    log(myName, "Quitting with exit value of 1!")
+    logger.log(myName, "Quitting with exit value of 1!")
     return 1
 
 
 # Check for problematic getter codes function. For use in main() only
 def checkForIssues(useTimer=0):
     # Checking the global getterCode variable will be necessary.
-    global getterCode
+    global getterCode, logger
     if(getterCode == 4):
         # We've found out that the data we got is out of data, and we have no backups!
         # Display something!
-        log(myName, "Recieved Out of Date Message")
+        logger.log(myName, "Recieved Out of Date Message")
         os.system("cowsay -d \"Inaccurate Data\"")
         sleep(300)
     elif(getterCode == 2):
@@ -619,16 +611,19 @@ Try again in a couple hours.", useTimer)
 Retry the process of finding the API URL and try again.", useTimer)
 
 def main():
-    global getterCode, crashOnHTTPError
+    global getterCode, crashOnHTTPError, logger
     try:
+        # Register logger
+        logger = Logger(startTime)
+
         # Identify ourselves in logging
         myName = "MAIN  "
-        log(myName, "Displayer Started.")
+        logger.log(myName, "Displayer Started.")
 
         # If the config file doesn't exist, initialize!
-        log(myName, "Loading configurations...")
+        logger.log(myName, "Loading configurations...")
         if(not os.path.exists(".weatherdisprc")):
-            log(myName, ".weatherdisprc doesn't exist! Initializing...")
+            logger.log(myName, ".weatherdisprc doesn't exist! Initializing...")
             initConfig()
 
         # We are going to store our configs in a dictionary
@@ -645,7 +640,7 @@ def main():
                 try:
                     tweaks[element[0]] = int(element[1])
                 except ValueError:
-                    log(myName, "ERROR: Cannot convert to int! Skipping, with dummy value of 0.")
+                    logger.log(myName, "ERROR: Cannot convert to int! Skipping, with dummy value of 0.")
                     tweaks[element[0]] = 0
             config.close()
         
@@ -662,13 +657,16 @@ def main():
                 if("port" not in tweaks):
                     tweaks["port"] = 80
         except KeyError:
-            log(myName, "web-server variable not found in config file! Keeping webInterface set to false.")
+            logger.log(myName, "web-server variable not found in config file! Keeping webInterface set to false.")
         
+        # Tell the logger what the status of webInterface is
+        logger.setRunSrv(webInterface)
+
         if("stop-on-http-error" in tweaks):
             if(tweaks["stop-on-http-error"] == 0):
                 crashOnHTTPError = False
         else:
-            log(myName, "stop-on-http-error variable not found in config file! Keeping crashOnHTTPError set to true.")
+            logger.log(myName, "stop-on-http-error variable not found in config file! Keeping crashOnHTTPError set to true.")
 
         # Ensure time variable is initialized
         if("time" not in tweaks):
@@ -679,23 +677,23 @@ def main():
             showIP = tweaks["show-IP"]
         else:
             showIP = 0
-            log(myName, "Showing IP config isn't configured! Using default value of false.")
+            logger.log(myName, "Showing IP config isn't configured! Using default value of false.")
 
         # Threading Things. Start with getter for now, we'll do the server if it is needed after we get data.
-        log(myName, "Starting Getter Thread...")
-        getterThread = threading.Thread(target=getter, daemon=True)
+        logger.log(myName, "Starting Getter Thread...")
+        getterThread = threading.Thread(target=getter, daemon=True, args=[logger])
         getterThread.start()
 
         # Do this with text outputed. We'll do this again without text on the screen later.
         if(os.path.exists("weatherCache.json") == True):
-            log(myName, "weatherCache.json still exists. Making it a backup...")
+            logger.log(myName, "weatherCache.json still exists. Making it a backup...")
             os.rename("weatherCache.json", "weatherCache-bk.json")
         if(os.path.exists("hourWeatherCache.json") == True):
-            log(myName, "hourWeatherCache.json still exists. Making it a backup...")
+            logger.log(myName, "hourWeatherCache.json still exists. Making it a backup...")
             os.rename("hourWeatherCache.json", "hourWeatherCache-bk.json")
 
         # Report to log what tweaks are configured as
-        log(myName, "Tweaks Config right before display loop: " + str(tweaks))
+        logger.log(myName, "Tweaks Config right before display loop: " + str(tweaks))
 
         print("Waiting for data...")
         while(getterCode != 5):
@@ -728,7 +726,7 @@ and read the README.md file to explain the steps to do this.")
             sleep(0.01)
         
         # Data recieved. Let the log know!
-        log(myName, "Recieved JSON. Ready to display...")
+        logger.log(myName, "Recieved JSON. Ready to display...")
         
         # Calculate IP if webInterface or show-IP is enabled
         if(webInterface or (showIP == 1)):
@@ -754,15 +752,15 @@ and read the README.md file to explain the steps to do this.")
                     theData.close()
                 break
             except json.decoder.JSONDecodeError as e:
-                log(myName, "Couldn't decode the JSON. Trying again. Next few lines contain error information.")
-                log(myName, str(e))
+                logger.log(myName, "Couldn't decode the JSON. Trying again. Next few lines contain error information.")
+                logger.log(myName, str(e))
                 sleep(1)
             except FileNotFoundError:
-                log(myName, "Could not find JSON. Trying again in 2 secs...")
+                logger.log(myName, "Could not find JSON. Trying again in 2 secs...")
                 sleep(2)
         
         # Get decoded data in arrays using functions above
-        log(myName, "Decoding JSON Data...")
+        logger.log(myName, "Decoding JSON Data...")
         currentTemps = decodeTemps(data)
         tempUnits = decodeTempUnit(data)
         titles = decodeTitles(data)
@@ -793,7 +791,7 @@ and read the README.md file to explain the steps to do this.")
             #    print(titles[i] + ": " + forecasts[i] + ". Temp: " + str(currentTemps[i]) + "°" + tempUnits[i])
             
             # Print out display
-            log(myName, "Printing out display...")
+            logger.log(myName, "Printing out display...")
 
             # Heading Info Line. Depending on what options are enabled, it could consist of nothing, an IP Address,
             # a web server URL, and/or a clock. Thus, use a variable to help us out.
@@ -838,7 +836,7 @@ and read the README.md file to explain the steps to do this.")
                     break
                 elif(i == 0):
                     # All the things we need to do to wrap up displaying
-                    log(myName, "Display has completed. Time to manage JSON files then wait.")
+                    logger.log(myName, "Display has completed. Time to manage JSON files then wait.")
 
                     """ We now need to clear all cached files so that we can update it again.
                         To do this, we'll simply make backup files (so that in the case there)
@@ -846,19 +844,19 @@ and read the README.md file to explain the steps to do this.")
 
                     if(os.path.exists("weatherCache.json") == True):
                         if(os.path.exists("weatherCache-bk.json") == True):
-                            log(myName, "Previous long-term backups exist! Deleting them to ensure no confusion")
+                            logger.log(myName, "Previous long-term backups exist! Deleting them to ensure no confusion")
                             os.remove("weatherCache-bk.json")
                         os.rename("weatherCache.json", "weatherCache-bk.json")
-                        log(myName, "Transfering JSON files to backup...")
+                        logger.log(myName, "Transfering JSON files to backup...")
                     if(os.path.exists("hourWeatherCache.json") == True):
                         if(os.path.exists("hourWeatherCache-bk.json") == True):
-                            log(myName, "Previous hourly backups exist! Deleting them to ensure no confusion")
+                            logger.log(myName, "Previous hourly backups exist! Deleting them to ensure no confusion")
                             os.remove("hourWeatherCache-bk.json")
                         os.rename("hourWeatherCache.json", "hourWeatherCache-bk.json")
-                        log(myName, "Transfering Hourly JSON files to backup...")
+                        logger.log(myName, "Transfering Hourly JSON files to backup...")
                 
                 if(getterCode == 5 and i > 1):
-                    log(myName, "New JSON recieved. Starting the cycle again.")
+                    logger.log(myName, "New JSON recieved. Starting the cycle again.")
                     getterCode = 0
 
                     # Reset Counter
@@ -875,14 +873,14 @@ and read the README.md file to explain the steps to do this.")
                                 theData.close()
                             break
                         except json.decoder.JSONDecodeError as e:
-                            log(myName, "Couldn't decode the JSON. Trying again. Next few lines contain error information.")
+                            logger.log(myName, "Couldn't decode the JSON. Trying again. Next few lines contain error information.")
                             sleep(1)
                         except FileNotFoundError:
-                            log(myName, "Could not find JSON. Trying again in 2 secs...")
+                            logger.log(myName, "Could not find JSON. Trying again in 2 secs...")
                             sleep(2)
                         
                     # Get decoded data in arrays using functions above
-                    log(myName, "Decoding JSON Data...")
+                    logger.log(myName, "Decoding JSON Data...")
                     currentTemps = decodeTemps(data)
                     tempUnits = decodeTempUnit(data)
                     titles = decodeTitles(data)
@@ -895,14 +893,14 @@ and read the README.md file to explain the steps to do this.")
                     break
                 else:
                     if(i == 7200):
-                        log(myName, "Still waiting for JSON Data. Hasn't been recieved in a long time.")
+                        logger.log(myName, "Still waiting for JSON Data. Hasn't been recieved in a long time.")
                         print("Weather info hasn't updated in a while. Try restarting the system.\nIf problems presist, check the log.")
                 
                 if(i < 7202):
                     i += 1
     except KeyboardInterrupt:
         # Final things to be done
-        log(myName, "Keyboard Interrupt - Quitting!")
+        logger.log(myName, "Keyboard Interrupt - Quitting!")
         return 0
 
 if(__name__ == "__main__"):

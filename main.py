@@ -55,12 +55,13 @@ logger = None
 # as sudo and thus doesn't require changing file permissions.
 def permGrant(myName, file, serverEnabled=False):
     if(serverEnabled):
-        log(myName, "Web Interface enabled. Granting full permission to " + file + "...")
+        global logger
+        logger.log(myName, "Web Interface enabled. Granting full permission to " + file + "...")
         # Use try to ignore if file not exists error
         try:
             os.chmod(file, 0o777)
         except FileNotFoundError:
-            log(myName, file + " vanished! Permissions could not be granted. Moving on!")
+            logger.log(myName, file + " vanished! Permissions could not be granted. Moving on!")
 
 # I need to refactor my code lol
 def criticalHTTPErrorHandler(myName: str, errorCode: int):

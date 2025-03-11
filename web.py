@@ -337,7 +337,7 @@ Weather-Displayer. If not, see <https://www.gnu.org/licenses/>.
 
 def getJSON():
     # Use global variables
-    global data, hourData
+    global data, hourData, logger
 
     # Get our json data from files (code stolen from main.py)
     attmpt = 0
@@ -348,13 +348,13 @@ def getJSON():
                     with open("weatherCache.json", "r") as theData:
                         data = json.load(theData)
                         theData.close()
-                    log("Was able to load fresh general data.")
+                    logger.log("WEB      ", "Was able to load fresh general data.")
                 except FileNotFoundError:
                     log("General Data File Vanished! Trying again after 0.5 secs...")
                     sleep(0.5)
                     attmpt += 1
                     if(attmpt > 5):
-                        log("Attempt Timeout achieved, will wait 5 minutes to continue.")
+                        logger.log("WEB      ", "Attempt Timeout achieved, will wait 5 minutes to continue.")
                         sleep(300)
                         attmpt = 0
                     continue
@@ -363,25 +363,25 @@ def getJSON():
                     with open("weatherCache-bk.json", "r") as theData:
                         data = json.load(theData)
                         theData.close()
-                    log("Got general weather from backup.")
+                    logger.log("WEB      ", "Got general weather from backup.")
                 except FileNotFoundError:
                     log("General Data Backup Vanished! Trying again after 0.5 secs...")
                     sleep(0.5)
                     attmpt += 1
                     if(attmpt > 5):
-                        log("Attempt Timeout achieved, will wait 5 minutes to continue.")
+                        logger.log("WEB      ", "Attempt Timeout achieved, will wait 5 minutes to continue.")
                         sleep(300)
                         attmpt = 0
                     continue
             else:
                 # Unable to get JSON, must not be provided from main.py yet
-                log("General weather info unavailble. Will try again after 0.5 seconds.")
+                logger.log("WEB      ", "General weather info unavailble. Will try again after 0.5 seconds.")
                 sleep(0.5)
                 continue
             break
         except json.decoder.JSONDecodeError as e:
-            log("Couldn't decode the JSON. Trying again. Next few lines contain error information.")
-            log(str(e))
+            logger.log("WEB      ", "Couldn't decode the JSON. Trying again. Next few lines contain error information.")
+            logger.log("WEB      ", str(e))
             sleep(1)
 
     attmpt = 0
@@ -392,13 +392,13 @@ def getJSON():
                     with open("hourWeatherCache.json", "r") as theData:
                         hourData = json.load(theData)
                         theData.close()
-                    log("Was able to get fresh hourly data.")
+                    logger.log("WEB      ", "Was able to get fresh hourly data.")
                 except FileNotFoundError:
-                    log("Hourly Data File Vanished! Trying again after 0.5 secs...")
+                    logger.log("WEB      ", "Hourly Data File Vanished! Trying again after 0.5 secs...")
                     sleep(0.5)
                     attmpt += 1
                     if(attmpt > 5):
-                        log("Attempt Timeout achieved, will wait 5 minutes to continue.")
+                        logger.log("WEB      ", "Attempt Timeout achieved, will wait 5 minutes to continue.")
                         sleep(300)
                         attmpt = 0
                     continue
@@ -407,24 +407,24 @@ def getJSON():
                     with open("hourWeatherCache-bk.json", "r") as theData:
                         hourData = json.load(theData)
                         theData.close()
-                    log("Got hourly weather from backup.")
+                    logger.log("WEB      ", "Got hourly weather from backup.")
                 except FileNotFoundError:
-                    log("Hourly Backup File Vanished! Trying again after 0.5 secs...")
+                    logger.log("WEB      ", "Hourly Backup File Vanished! Trying again after 0.5 secs...")
                     sleep(0.5)
                     attmpt += 1
                     if(attmpt > 5):
-                        log("Attempt Timeout achieved, will wait 5 minutes to continue.")
+                        logger.log("WEB      ", "Attempt Timeout achieved, will wait 5 minutes to continue.")
                         sleep(300)
                         attmpt = 0
                     continue
             else:
-                log("Hourly weather info unavalible. Will try again after 0.5 seconds.")
+                logger.log("WEB      ", "Hourly weather info unavalible. Will try again after 0.5 seconds.")
                 sleep(0.5)
                 continue
             break
         except json.decoder.JSONDecodeError as e:
-            log("Couldn't decode the JSON. Trying again. Next few lines contain error information.")
-            log(str(e))
+            logger.log("WEB      ", "Couldn't decode the JSON. Trying again. Next few lines contain error information.")
+            logger.log("WEB      ", str(e))
             sleep(1)
     
     # Return in an array. Index 0 is general, index 1 is hourly.

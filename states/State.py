@@ -51,7 +51,7 @@ class State:
     # What to do on error
     @abstractmethod
     def handleError(self):
-        pass
+        return 0
 
 
     # Magic methods

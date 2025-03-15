@@ -31,7 +31,7 @@ class NoHourJSON(State):
         self.__stateName = "No hourly JSON data"
 
 
-    # Handle inability to get general weather JSON data
+    # Handle inability to get hourly weather JSON data
     def handleError(self, myName):
         self.__logger.log("STATE ", "Couldn't get hourly weather JSON. Prompting user to quit...")
         system("clear")

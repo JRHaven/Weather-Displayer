@@ -33,7 +33,7 @@ class NoURL(State):
 
     # Handle no URL file error
     def handleError(self, myName):
-        self.__logger.log("STATE ", "Recieved No URL Message...")
+        self.__logger.log("STATE ", "No URL Found! Prompting user to quit...")
         system("clear")
         print("\nERROR: Could not find the NWS Destination URL!\n\
 If this is your first time running the script, you may have not\nput in the \

@@ -31,10 +31,15 @@ class State:
     __stateName = ""
 
     # constructor
-    def __init__(self, logger: Logger, crashOnHTTPError: bool, useTimer: int=0):
-        self.__crashError = crashOnHTTPError
-        self.__useTimer = useTimer
-        self.__logger = logger
+    def __init__(self, stateStack: tuple):
+        self.__crashError = stateStack[1]
+        self.__logger = stateStack[0]
+
+        # Handle no timer given
+        if(len(stateStack) > 2):
+            self.__useTimer = stateStack[2]
+        else:
+            self.useTimer = 0
 
         self.setProperties()
 

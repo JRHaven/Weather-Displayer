@@ -17,7 +17,7 @@ Weather-Displayer. If not, see <https://www.gnu.org/licenses/>.
 
 from time import sleep
 from Logger import Logger
-from states import *
+from states.States import *
 import json, os, math, time, urllib.request
 
 #def getter(logger: Logger):

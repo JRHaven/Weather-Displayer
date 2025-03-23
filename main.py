@@ -20,7 +20,7 @@ Weather-Displayer. If not, see <https://www.gnu.org/licenses/>.
 from time import sleep
 from Logger import Logger
 from Getter import Getter
-from states import *
+from states.States import *
 import json, os, math, time, threading, socket, web
 
 # We're going to need to create a start-time variable to calculate uptime for logging purposes

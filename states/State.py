@@ -17,9 +17,10 @@ Weather-Displayer. If not, see <https://www.gnu.org/licenses/>.
 
 # Base Getter Class that will be expanded for different states
 
-import urllib.request, socket, web
+from abc import ABC, abstractmethod
+import urllib.request, socket
 
-class State:
+class State(ABC):
     __logger = None
 
     # Configurables from .weatherdisprc

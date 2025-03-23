@@ -34,14 +34,18 @@ class Getter():
 
         # Only set state after every other thing is set
         self.__state = Waiting(self.__stateStack())
-    
-    # Getter for state
-    def getState(self) -> State:
-        return self.__state
 
     # Return data necessary for state in a tuple
     def __stateStack() -> tuple:
         return tuple(self.__logger, self.__crashOnHTTPError, self.__useTimer)
+    
+    # Getter for state
+    def getState(self):
+        return self.__state
+
+    # State resetter - a proper setter isn't necessary
+    def resetState(self):
+        self.__state = Waiting(__stateStack())
 
     # Main function
     def run(self):

@@ -19,13 +19,14 @@ Weather-Displayer. If not, see <https://www.gnu.org/licenses/>.
 
 from time import sleep
 from Logger import Logger
+from Getter import Getter
+from states import *
 import json, os, math, time, threading, socket, web
 
 # We're going to need to create a start-time variable to calculate uptime for logging purposes
 startTime = time.time()
 
 # Global variables that should be accessible to both threads
-getterCode = 0
 getterRun = 1
 crashOnHTTPError = True
 webInterface = False
@@ -43,31 +44,8 @@ def permGrant(myName, file, serverEnabled=False):
         except FileNotFoundError:
             logger.log(myName, file + " vanished! Permissions could not be granted. Moving on!")
 
-# I need to refactor my code lol
-def criticalHTTPErrorHandler(myName: str, errorCode: int):
-    global crashOnHTTPError, getterCode
-    if(crashOnHTTPError):
-        if(errorCode == 500):
-            log(myName, "Too many 500 errors! There\'s something deeper going on. Configured to crash. Notifying main and quitting!")
-            getterCode = 9
-        else:
-            log(myName, "HTTP " + str(errorCode) + " Error. Configured to crash. Notifying main and quitting!")
-            getterCode = 7
-
-    else:
-        if(errorCode == 500):
-            log(myName, "Too many 500 errors! There\'s something deeper going on. Configured to continue. Implementing backups if they exist...")
-            getterCode = 9
-        else:
-            log(myName, "HTTP " + str(errorCode) + " Error. Configured to continue. Implementing backups if they exist...")
-
-        if(os.path.exists("weatherCache-bk.json") and os.path.exists("hourWeatherCache-bk.json")):
-            os.rename("weatherCache-bk.json", "weatherCache.json")
-            os.rename("hourWeatherCache-bk.json", "hourWeatherCache.json")
-        else:
-            log(myName, "CRITICAL ERROR! No or incomplete weather backups to display! Quitting, there is nothing to do!")
-            getterCode = 8
-        
+def stateStack() -> tuple:
+    return tuple(logger, crashOnHTTPError, useTimer)
 
 def initConfig():
     with open(".weatherdisprc", "w") as conf:
@@ -374,67 +352,8 @@ def getIP(network):
     # Return the local IP address as a string
     return ip
 
-def errorMsg(logMsg: str, msg: str, useTimer=0):
-    global logger
-    myName = "MAIN  "
-    logger.log(myName, logMsg)
-    os.system("clear")
-    print(msg)
-    
-    if(useTimer == 1):
-        logger.log(myName, "Configured to quit automatically. Will close in 60 seconds.")
-        sleep(60)
-    else:
-        input("Press enter to exit...")
-    
-    logger.log(myName, "Quitting with exit value of 1!")
-    return 1
-
-
-# Check for problematic getter codes function. For use in main() only
-def checkForIssues(useTimer=0):
-    # Checking the global getterCode variable will be necessary.
-    global getterCode, logger
-    if(getterCode == 4):
-        # We've found out that the data we got is out of data, and we have no backups!
-        # Display something!
-        logger.log(myName, "Recieved Out of Date Message")
-        os.system("cowsay -d \"Inaccurate Data\"")
-        sleep(300)
-    elif(getterCode == 2):
-        # Critical error, couldn't retrieve general weather data.
-        return errorMsg("Recieved getterCode 2. Prompting user to quit...", \
-            "Could not retrieve general weather data.\nWeather-Displayer cannot continue.", useTimer)
-    elif(getterCode == 3):
-        # Similar error, handled in the exact same way
-        return errorMsg("Recieved getterCode 3. Prompting user to quit...", \
-            "Could not retrieve hourly weather data.\nWeather-Displayer cannot continue.", useTimer)
-    elif(getterCode == 6):
-        # Encountered 404 error
-        return errorMsg("Recieved message of 404 error. Telling user and quitting...",\
-            "Recieved a 404 error. This likely means the url given \
-in the url file is incorrect.\nRetry the process of finding the API URL and try again.", useTimer)
-    elif(getterCode == 7):
-        # Encountered 503 error
-        return errorMsg("Recieved message of 503 error. Telling the user and quitting...", \
-            "Recieved a 503 error. This is an error on the NWS end, usually\n\
-meaning the server down, possibly under maintenance.\n\
-Weather-Displayer cannot continue. Try again in a few hours.", useTimer)
-    elif(getterCode == 8):
-        return errorMsg("Recieved message on lack of backups. Telling the user and quitting...", \
-            "Was unable to acquire needed backups to sort out an error.\nWeather-Displayer cannot continue.", useTimer)
-    elif(getterCode == 9):
-        return errorMsg("Recieved message of excessive 500 errors. Telling the user and quitting...", \
-            "Recieved too many 500 errors. Usually these clear after a couple seconds,\n\
-but not now. This is a NWS issue. Weather-Displayer cannot continue.\n\
-Try again in a couple hours.", useTimer)
-    elif(getterCode == 10):
-        return errorMsg("Recieved message of decode error. Telling user and quitting...", \
-            "Encountered JSON decode error. This is likely the\nresult of an incorrect url.\n\
-Retry the process of finding the API URL and try again.", useTimer)
-
 def main():
-    global getterCode, crashOnHTTPError, logger
+    global crashOnHTTPError, logger
     try:
         # Register logger
         logger = Logger(startTime)
@@ -502,9 +421,10 @@ def main():
             showIP = 0
             logger.log(myName, "Showing IP config isn't configured! Using default value of false.")
 
-        # Threading Things. Start with getter for now, we'll do the server if it is needed after we get data.
+        # Register and start getter in a thread
         logger.log(myName, "Starting Getter Thread...")
-        getterThread = threading.Thread(target=getter, daemon=True, args=[logger])
+        getter = Getter(logger, crashOnHTTPError, tweaks["time"])
+        getterThread = threading.Thread(target=getter.run, daemon=True)
         getterThread.start()
 
         # Do this with text outputed. We'll do this again without text on the screen later.
@@ -519,33 +439,13 @@ def main():
         logger.log(myName, "Tweaks Config right before display loop: " + str(tweaks))
 
         print("Waiting for data...")
-        while(getterCode != 5):
-            # Check for various getter messages
-            if(getterCode == 1):
-                # There is no URL File
-                if("close-timer" in tweaks):
-                    return errorMsg("Recieved No URL Message...", \
-                        "\nERROR: Could not find the NWS Destination URL!\n\
-If this is your first time running the script, you may have not\nput in the \
-destination URL. If you don't know how to do this,\ngo to https://github.com/JR-Tech-and-Software/Weather-Displayer\n\
-and read the README.md file to explain the steps to do this.", tweaks["close-timer"])
-                else:
-                    return errorMsg("Recieved No URL Message...", \
-                        "\nERROR: Could not find the NWS Destination URL!\n\
-If this is your first time running the script, you may have not\nput in the \
-destination URL. If you don't know how to do this,\ngo to https://github.com/JR-Tech-and-Software/Weather-Displayer\n\
-and read the README.md file to explain the steps to do this.")
-
-            # Check for getter errors, return the value if there is a value to return
-            if("close-timer" in tweaks):
-                issuesCode = checkForIssues(tweaks["close-timer"])
-            else:
-                issuesCode = checkForIssues()
+        while(getter.getState() != NewJSON(stateStack())):
+            # Handle any errors that may exist
+            error = getter.getState().handleError()
+            if(error != None):
+                return error
             
-            if(issuesCode != None):
-                return issuesCode
-
-            # wait so we don't destroy cpu fan lol
+            # wait so we don't overload cpu
             sleep(0.01)
         
         # Data recieved. Let the log know!
@@ -678,9 +578,9 @@ and read the README.md file to explain the steps to do this.")
                         os.rename("hourWeatherCache.json", "hourWeatherCache-bk.json")
                         logger.log(myName, "Transfering Hourly JSON files to backup...")
                 
-                if(getterCode == 5 and i > 1):
+                if(getter.getState() == Waiting(stateStack) and i > 1):
                     logger.log(myName, "New JSON recieved. Starting the cycle again.")
-                    getterCode = 0
+                    getter.resetState()
 
                     # Reset Counter
                     i = 0

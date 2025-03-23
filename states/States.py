@@ -22,10 +22,6 @@ from states.State import State
 from Logger import Logger
 
 class WrongURL(State):
-    # constructor
-    def __init__(self, logger: Logger, crashOnHTTPError: bool, useTimer: int=0):
-        super(logger, crashOnHTTPError, useTimer)
-
     # Set properties
     def setProperties(self):
         self.__stateCode = 6
@@ -49,10 +45,6 @@ in the url file is incorrect.\nRetry the process of finding the API URL and try 
         return 1
 
 class NewJSON(State):
-    # constructor
-    def __init__(self, logger: Logger, crashOnHTTPError: bool, useTimer: int=0):
-        super(logger, crashOnHTTPError, useTimer)
-
     # Set properties
     def setProperties(self):
         self.__stateCode = 5
@@ -65,10 +57,6 @@ class NewJSON(State):
 
 
 class Waiting(State):
-    # constructor
-    def __init__(self, logger: Logger, crashOnHTTPError: bool, useTimer: int=0):
-        super(logger, crashOnHTTPError, useTimer)
-
     # Set properties
     def setProperties(self):
         self.__stateCode = 0
@@ -81,10 +69,6 @@ class Waiting(State):
 
 
 class NoHourJSON(State):
-    # constructor
-    def __init__(self, logger: Logger, crashOnHTTPError: bool, useTimer: int=0):
-        super(logger, crashOnHTTPError, useTimer)
-
     # Set properties
     def setProperties(self):
         self.__stateCode = 3
@@ -108,10 +92,6 @@ class NoHourJSON(State):
 
 
 class NoBackups(State):
-    # constructor
-    def __init__(self, logger: Logger, crashOnHTTPError: bool, useTimer: int=0):
-        super(logger, crashOnHTTPError, useTimer)
-
     # Set properties
     def setProperties(self):
         self.__stateCode = 8
@@ -135,10 +115,6 @@ class NoBackups(State):
 
 
 class JSONWrongURL(State):
-    # constructor
-    def __init__(self, logger: Logger, crashOnHTTPError: bool, useTimer: int=0):
-        super(logger, crashOnHTTPError, useTimer)
-
     # Set properties
     def setProperties(self):
         self.__stateCode = 10
@@ -163,10 +139,6 @@ Retry the process of finding the API URL and try again.")
 
 
 class OutDateJSON(State):
-    # constructor
-    def __init__(self, logger: Logger, crashOnHTTPError: bool, useTimer: int=0):
-        super(logger, crashOnHTTPError, useTimer)
-
     # Set properties
     def setProperties(self):
         self.__stateCode = 4
@@ -182,10 +154,6 @@ class OutDateJSON(State):
 
 
 class ServerError(State):
-    # constructor
-    def __init__(self, logger: Logger, crashOnHTTPError: bool, useTimer: int=0):
-        super(logger, crashOnHTTPError, useTimer)
-
     # Set properties
     def setProperties(self):
         self.__stateCode = 7
@@ -211,10 +179,6 @@ Weather-Displayer cannot continue. Try again in a few hours.")
 
 
 class TooManyErrors(State):
-    # constructor
-    def __init__(self, logger: Logger, crashOnHTTPError: bool, useTimer: int=0):
-        super(logger, crashOnHTTPError, useTimer)
-
     # Set properties
     def setProperties(self):
         self.__stateCode = 9
@@ -240,10 +204,6 @@ Try again in a couple hours.")
 
 
 class NoGenJSON(State):
-    # constructor
-    def __init__(self, logger: Logger, crashOnHTTPError: bool, useTimer: int=0):
-        super(logger, crashOnHTTPError, useTimer)
-
     # Set properties
     def setProperties(self):
         self.__stateCode = 2
@@ -267,10 +227,6 @@ class NoGenJSON(State):
 
 
 class NoURL(State):
-    # constructor
-    def __init__(self, logger: Logger, crashOnHTTPError: bool, useTimer: int=0):
-        super(logger, crashOnHTTPError, useTimer)
-
     # Set properties
     def setProperties(self):
         self.__stateCode = 1

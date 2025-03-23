@@ -33,11 +33,11 @@ class Getter():
         self.__useTimer = useTimer
 
         # Only set state after every other thing is set
-        self.__state = Waiting(self.__stateStack())
+        self.__state = Waiting((logger, crashOnHTTPError, useTimer))
 
     # Return data necessary for state in a tuple
     def __stateStack() -> tuple:
-        return tuple(self.__logger, self.__crashOnHTTPError, self.__useTimer)
+        return (self.__logger, self.__crashOnHTTPError, self.__useTimer)
     
     # Getter for state
     def getState(self):
@@ -52,7 +52,7 @@ class Getter():
         # Set this variable for easy identification for logging purposes
         myName = "GETTER"
         # Report to log that script has been started
-        logger.log(myName, "JSON Getter Started.")
+        self.__logger.log(myName, "JSON Getter Started.")
 
         # Lets us know if it is our first run
         begin = True
@@ -125,7 +125,7 @@ class Getter():
                             dumpFile.close()
                         self.__logger.log(myName, "Dumped long-term JSON to file, weatherCache.json")
 
-                        # Permissions! This is probably going to be run as sudo.
+                        # Permissions! This may be run as sudo.
                         permGrant(myName, "weatherCache.json", webInterface)
                     
                         with open("hourWeatherCache.json", "w") as hourDumbFile:

@@ -26,11 +26,12 @@ import json, os, math, time, threading, socket, web
 # We're going to need to create a start-time variable to calculate uptime for logging purposes
 startTime = time.time()
 
-# Global variables that should be accessible to both threads
+# Global variables
 getterRun = 1
 crashOnHTTPError = True
 webInterface = False
 logger = None
+useTimer = 0
 
 # Deal with permissions only if web-server is enabled. If it is disabled, the program is probably not being run
 # as sudo and thus doesn't require changing file permissions.
@@ -45,7 +46,7 @@ def permGrant(myName, file, serverEnabled=False):
             logger.log(myName, file + " vanished! Permissions could not be granted. Moving on!")
 
 def stateStack() -> tuple:
-    return tuple(logger, crashOnHTTPError, useTimer)
+    return (logger, crashOnHTTPError, useTimer)
 
 def initConfig():
     with open(".weatherdisprc", "w") as conf:
@@ -420,10 +421,17 @@ def main():
         else:
             showIP = 0
             logger.log(myName, "Showing IP config isn't configured! Using default value of false.")
+        
+        # timer
+        global useTimer
+        if("close-timer" in tweaks):
+            useTimer = tweaks["close-timer"]
+        else:
+            useTimer = 0
 
         # Register and start getter in a thread
         logger.log(myName, "Starting Getter Thread...")
-        getter = Getter(logger, crashOnHTTPError, tweaks["time"])
+        getter = Getter(logger, crashOnHTTPError, useTimer)
         getterThread = threading.Thread(target=getter.run, daemon=True)
         getterThread.start()
 

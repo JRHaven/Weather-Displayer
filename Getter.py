@@ -25,16 +25,25 @@ class Getter():
     __state = None
     __crashOnHTTPError = True
     __logger = None
+    __useTimer = 0
 
-    def __init__(self, logger: Logger, crashOnHTTPError: bool):
-        self.__state = Waiting()
+    def __init__(self, logger: Logger, crashOnHTTPError: bool, useTimer: int=0):
         self.__logger = logger
         self.__crashOnHTTPError = crashOnHTTPError
+        self.__useTimer = useTimer
+
+        # Only set state after every other thing is set
+        self.__state = Waiting(self.__stateStack())
     
     # Getter for state
     def getState(self) -> State:
         return self.__state
 
+    # Return data necessary for state in a tuple
+    def __stateStack() -> tuple:
+        return tuple(self.__logger, self.__crashOnHTTPError, self.__useTimer)
+
+    # Main function
     def run(self):
         # Set this variable for easy identification for logging purposes
         myName = "GETTER"
@@ -55,7 +64,7 @@ class Getter():
         else:
             # The file doesn't exist. Log this occasion and tell main.py to inform and quit
             self.__logger.log(myName, "ERROR: URL File doesn't exist! Informing and Quitting!")
-            getterCode = 1
+            self.__state = NoURL(self.__stateStack())
             exit(0)
 
         if(dest[len(dest)-1] == "\n"):
@@ -99,10 +108,10 @@ class Getter():
                             os.rename("hourWeatherCache-bk.json", "hourWeatherCache.json")
                             os.rename("weatherCache-bk.json", "weatherCache.json")
                         else:
-                            getterCode = 4
+                            self.__state = OutDateJSON(self.__stateStack())
                             
                         sleep(300)
-                        getterCode = 0
+                        self.__state = Waiting(self.__stateStack())
                         #continue
                     else:
                         # Use global variable webInterface
@@ -133,7 +142,7 @@ class Getter():
                         continue
                     elif(e.code == 404):
                         self.__logger.log(myName, "HTTP 404 Error. Notifying main and quitting!")
-                        getterCode = 6
+                        self.__state = WrongURL(self.__stateStack())
                         break
                     elif(e.code == 503):
                         criticalHTTPErrorHandler(myName, 503)
@@ -154,7 +163,7 @@ class Getter():
                     else:
                         if(os.path.exists("weatherCache.json") == False):
                             self.__logger.log(myName, "CRITICAL ERROR! No long-term backup info to display! Quitting, there is nothing to do!")
-                            getterCode = 2
+                            self.__state = NoGenJSON(self.__stateStack())
                             break
                         else:
                             self.__logger.log(myName, "Long-Term backups were avalible, using those. Nothing to do now until next cycle.")
@@ -166,14 +175,14 @@ class Getter():
                     else:
                         if(os.path.exists("hourWeatherCache.json") == False):
                             self.__logger.log(myName, "CRITICAL ERROR! No hourly backup info to display! Quitting, there is nothing to do!")
-                            getterCode = 3
+                            self.__state = NoHourJSON(self.__stateStack())
                         else:
                             print("Backups for one weather script is already avalible. There is nothing to do.")
                             self.__logger.log(myName, "Hourly backups were avalible, using those. Nothing to do now until next cycle.")
                     break
                 except json.decoder.JSONDecodeError:
                     self.__logger.log(myName, "Encountered JSON decode error. Informing main and quitting...")
-                    getterCode = 10
+                    self.__state = JSONWrongURL(self.__stateStack())
                     break
                 begin = False
 
@@ -183,10 +192,10 @@ class Getter():
             else:
                 # Let main know that we have retrieved JSON
                 print(getterCode)
-                getterCode = 5
+                self.__state = NewJSON(self.__stateStack())
                 self.__logger.log(myName, "JSON all dealt with here! Getter code set to value of 5...")
                 # Tell main that we are now waiting for the next thing, after a second delay
                 sleep(1)
-                getterCode = 0
+                self.__state = Waiting(self.__stateStack())
                 self.__logger.log(myName, "Reset Getter code to value of 0: waiting...")
                 sleep(900)

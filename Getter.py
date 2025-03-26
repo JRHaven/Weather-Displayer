@@ -18,26 +18,21 @@ Weather-Displayer. If not, see <https://www.gnu.org/licenses/>.
 from time import sleep
 from Logger import Logger
 from states.States import *
+from Model import Model
 import json, os, math, time, urllib.request
 
 #def getter(logger: Logger):
 class Getter():
-    __state = None
-    __crashOnHTTPError = True
-    __logger = None
-    __useTimer = 0
-
-    def __init__(self, logger: Logger, crashOnHTTPError: bool, useTimer: int=0):
+    def __init__(self, logger: Logger, model: Model):
         self.__logger = logger
-        self.__crashOnHTTPError = crashOnHTTPError
-        self.__useTimer = useTimer
+        self.__model = model
 
         # Only set state after every other thing is set
-        self.__state = Waiting((logger, crashOnHTTPError, useTimer))
+        self.__state = Waiting((logger, model.crashOnHTTPError, model.useTimer))
 
     # Return data necessary for state in a tuple
     def __stateStack() -> tuple:
-        return (self.__logger, self.__crashOnHTTPError, self.__useTimer)
+        return (self.__logger, self.__model.crashOnHTTPError, self.__model.useTimer)
     
     # Getter for state
     def getState(self):
@@ -45,7 +40,19 @@ class Getter():
 
     # State resetter - a proper setter isn't necessary
     def resetState(self):
-        self.__state = Waiting(__stateStack())
+        self.__state = Waiting(self.__stateStack())
+
+    # Deal with permissions only if web-server is enabled. If it is disabled, the program is probably not being run
+    # as sudo and thus doesn't require changing file permissions.
+    def __permGrant(self, file):
+        if(self.__model.webInterface):
+            global logger
+            logger.log("GETTER", "Web Interface enabled. Granting full permission to " + file + "...")
+            # Use try to ignore if file not exists error
+            try:
+                os.chmod(file, 0o777)
+            except FileNotFoundError:
+                logger.log(myName, file + " vanished! Permissions could not be granted. Moving on!")
 
     # Main function
     def run(self):

@@ -23,7 +23,7 @@ class Model:
     __tweaks = {}
 
     # Constructor calls other method to load items from .weatherdisprc
-    def __init__(self, logger):
+    def __init__(self, logger: Logger):
         self.__logger = logger
         self.__tweaksFromFile()
 

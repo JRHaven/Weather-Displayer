@@ -31,7 +31,7 @@ class Getter():
         self.__state = Waiting((logger, model.crashOnHTTPError, model.useTimer))
 
     # Return data necessary for state in a tuple
-    def __stateStack() -> tuple:
+    def __stateStack(self) -> tuple:
         return (self.__logger, self.__model.crashOnHTTPError, self.__model.useTimer)
     
     # Getter for state
@@ -133,7 +133,7 @@ class Getter():
                         self.__logger.log(myName, "Dumped long-term JSON to file, weatherCache.json")
 
                         # Permissions! This may be run as sudo.
-                        permGrant(myName, "weatherCache.json", webInterface)
+                        self.__permGrant("weatherCache.json")
                     
                         with open("hourWeatherCache.json", "w") as hourDumbFile:
                             json.dump(hourData, hourDumbFile)
@@ -141,7 +141,7 @@ class Getter():
                         self.__logger.log(myName, "Dumped hourly JSON to file, hourWeatherCache.json")
 
                         # Permissions! This is probably going to be run as sudo.
-                        permGrant(myName, "hourWeatherCache.json", webInterface)
+                        self.__permGrant("hourWeatherCache.json")
                     break
                 except urllib.error.HTTPError as e:
                     # We can handle this in different ways depending on the HTTP error given. 500 errors we can handle
@@ -198,9 +198,7 @@ class Getter():
                 begin = False
 
             # Handle errors, so that we quit this thread if need be
-            if(getterCode > 0 and (getterCode < 4 or getterCode > 5)):
-                break
-            else:
+            if(self.__state.handleError() == None):
                 # Let main know that we have retrieved JSON
                 print(getterCode)
                 self.__state = NewJSON(self.__stateStack())
@@ -208,5 +206,7 @@ class Getter():
                 # Tell main that we are now waiting for the next thing, after a second delay
                 sleep(1)
                 self.__state = Waiting(self.__stateStack())
-                self.__logger.log(myName, "Reset Getter code to value of 0: waiting...")
+                self.__logger.log(myName, "Reset state to waiting")
                 sleep(900)
+            else:
+                break

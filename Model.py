@@ -64,7 +64,7 @@ class Model:
             self.__webInterface = False
         
         # Tell logger about webInterface
-        logger.setRunSrv(webInterface)
+        self.__logger.setRunSrv(self.__webInterface)
         
         if("show-IP" in self.__tweaks):
             self.__showIP = bool(self.__tweaks["show-IP"])

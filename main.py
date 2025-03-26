@@ -385,7 +385,7 @@ def main():
                     infoStr += "IP Address could not be calculated."
                 else:
                     infoStr += "Web Address: http://" +  str(ip).strip()
-            elif(showIP == 1):
+            elif(model.showIP == 1):
                 # Check if IP is 127.0.0.1. If this IP is given, no IP could be estaablished.
                 if(str(ip).strip() == "127.0.0.1"):
                     infoStr += "IP Address could not be calculated."

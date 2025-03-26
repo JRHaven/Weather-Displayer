@@ -20,6 +20,7 @@ Weather-Displayer. If not, see <https://www.gnu.org/licenses/>.
 from time import sleep
 from Logger import Logger
 from Getter import Getter
+from Model import Model
 from states.States import *
 import json, os, math, time, threading, socket, web
 
@@ -28,96 +29,9 @@ startTime = time.time()
 
 # Global variables
 getterRun = 1
-crashOnHTTPError = True
-webInterface = False
-logger = None
-useTimer = 0
 
-# Deal with permissions only if web-server is enabled. If it is disabled, the program is probably not being run
-# as sudo and thus doesn't require changing file permissions.
-def permGrant(myName, file, serverEnabled=False):
-    if(serverEnabled):
-        global logger
-        logger.log(myName, "Web Interface enabled. Granting full permission to " + file + "...")
-        # Use try to ignore if file not exists error
-        try:
-            os.chmod(file, 0o777)
-        except FileNotFoundError:
-            logger.log(myName, file + " vanished! Permissions could not be granted. Moving on!")
-
-def stateStack() -> tuple:
-    return (logger, crashOnHTTPError, useTimer)
-
-def initConfig():
-    with open(".weatherdisprc", "w") as conf:
-        conf.write("""\
-# Weather-Displayer Config File
-# This allows you to turn on certain optional functions and change settings to fit your needs. You may ONLY enter
-# integers - no strings or booleans. If you want to change it as a boolean, use 0s (false/no) and 1s (true/yes).
-
-# -------- GENERAL CONFIG --------
-# This is the main area for configuring the main, integral parts of Weather-Displayer.
-#
-# web-server:         Turning this on will enable the web-based interface. Weather-Displayer uses Python's Flask library
-#                     to run such an interface. You can go to the computer's IP address (displayed on screen) from a browser
-#                     to see the interface when enabled, as long as the computer accessing the interface is on the same network
-#                     as this computer.
-#
-# main-display:       Determins whether Weather-Displayer will print out info to the terminal. There will still be text from the
-#                     getter and maybe from Flask, but there will be no weather info. If both main-display and web-server are
-#                     turned off, only the getter function will be operational.
-#
-#                     If you are seeing this on a freshly generated config file, main-display is commented out and will not
-#                     do anything. I plan on making it functional soon, but right now I'm working on other things.
-#
-# show-IP:            Determins whether the system's IP Address be displayed. Will be displayed at the top of the terminal
-#                     on each update, similar to what happens when web-server is enabled. If both show-IP and web-server are enabled,
-#                     web-server's display rules takes precedence.
-#
-# time:               Determmins if a clock should be displayed. Options include:
-#                     0: Don't show clock (default)
-#                     1: Show a clock - use 12 hour format
-#                     2: Show a clock - use 24 hour format
-#
-# stop-on-http-error: Determins how to handle fatal HTTP errors. Such errors include 503 and excessive 500 errors. 503 errors
-#                     mean that the NWS is working on a solution, thus Weather-Displayer should not continue to request data out
-#                     of courtesy to NWS API maintainers. These errors may also last anywhere from an hour or two to days or
-#                     weeks. Many 500 errors vanish after waiting a couple seconds, but in other circumstances they may last
-#                     longer that this, and should be treated similar to a 503 error. There are 2 ways to handle these:
-#                        - Stop Weather-Displayer with a message explaining the situation (default)
-#                        - Show backup (but more outdated as time goes on) JSON data. This soulution does not include a message
-#                          to the user.
-#
-# close-timer:       Determins whether the program should wait for user input to close after a crash. Because of important
-#                    information to be displayed, the default value is 0. However, especailly in headless environments it
-#                    may be desirable for the program to close automatically. In this usecase, the value should be changed
-#                    to 1. The program will wait 60 seconds before closing automatically with an exit code of 1.
-web-server=0
-#main-display=1
-show-IP=0
-time=0
-stop-on-http-error=1
-close-timer=0
-
-# -------- WEB INTERFACE CONFIG --------
-# This is the area where we will configure the web interface.
-#
-# ip-network: This setting is directly related to the web-server and does not matter if the web interface is disabled.
-#             Weather-Displayer uses ip-network to help calculate which IP address this device is.
-#             This should be set to the number in the first octet of your local IP address. For many users, this would be 192,
-#             and that is what the default value is. If the script is used on networks that have multiple subnets, such
-#             as a workplace or school, it is more likely that this value should be changed to 10. You can use the "ip addr"
-#             command on Linux or "ipconfig" command in Windows to find out exactly what you should set it as.
-#
-# port:       What port should the web-interface run on? By default, it will run on port 80, which is the default in
-#             most systems for http traffic. Setting the port to 80, however, will require Weather-Displayer to be run
-#             as super user. If you don't want this but still want to use the web interface, change this number to an
-#             unused port, such as 5000. Just know that if you do this, you will need to change the url you access
-#             the web interface from. For example, with the port being set to 5000 with an IP Address of 192.168.0.50,
-#             the url to access the web interface would be http://192.168.0.50:5000
-ip-network=192
-port=80""")
-        conf.close()
+def stateStack(model: Model) -> tuple:
+    return (logger, model.crashOnHTTPError, model.useTimer)
 
 def decodeTemps(data):
     temps = []
@@ -363,75 +277,12 @@ def main():
         myName = "MAIN  "
         logger.log(myName, "Displayer Started.")
 
-        # If the config file doesn't exist, initialize!
-        logger.log(myName, "Loading configurations...")
-        if(not os.path.exists(".weatherdisprc")):
-            logger.log(myName, ".weatherdisprc doesn't exist! Initializing...")
-            initConfig()
-
-        # We are going to store our configs in a dictionary
-        tweaks = {}
-        with open(".weatherdisprc", "r") as config:
-            # Take out trailing whitespace, and then loop
-            for i in config.read().strip().split("\n"):
-                if(i == ""):
-                    continue
-                if(i[0] == "#"):
-                    continue
-
-                element = i.split("=")
-                try:
-                    tweaks[element[0]] = int(element[1])
-                except ValueError:
-                    logger.log(myName, "ERROR: Cannot convert to int! Skipping, with dummy value of 0.")
-                    tweaks[element[0]] = 0
-            config.close()
-        
-        # Identify global variable webInterface so that getter will know whether to change file permissions, and for
-        # a more reliable way of checking if the web interface is enabled
-        global webInterface
-
-        # Use try statement to detect a KeyError
-        try:
-            if(tweaks["web-server"] == 1):
-                webInterface = True
-
-                # The port variable is essential in this case.
-                if("port" not in tweaks):
-                    tweaks["port"] = 80
-        except KeyError:
-            logger.log(myName, "web-server variable not found in config file! Keeping webInterface set to false.")
-        
-        # Tell the logger what the status of webInterface is
-        logger.setRunSrv(webInterface)
-
-        if("stop-on-http-error" in tweaks):
-            if(tweaks["stop-on-http-error"] == 0):
-                crashOnHTTPError = False
-        else:
-            logger.log(myName, "stop-on-http-error variable not found in config file! Keeping crashOnHTTPError set to true.")
-
-        # Ensure time variable is initialized
-        if("time" not in tweaks):
-            tweaks["time"] = 0
-        
-        # Check if we need to show IP - we'll need this later.
-        if("show-IP" in tweaks):
-            showIP = tweaks["show-IP"]
-        else:
-            showIP = 0
-            logger.log(myName, "Showing IP config isn't configured! Using default value of false.")
-        
-        # timer
-        global useTimer
-        if("close-timer" in tweaks):
-            useTimer = tweaks["close-timer"]
-        else:
-            useTimer = 0
+        # Initialize model
+        model = Model(logger)
 
         # Register and start getter in a thread
         logger.log(myName, "Starting Getter Thread...")
-        getter = Getter(logger, crashOnHTTPError, useTimer)
+        getter = Getter(logger, model)
         getterThread = threading.Thread(target=getter.run, daemon=True)
         getterThread.start()
 
@@ -444,10 +295,10 @@ def main():
             os.rename("hourWeatherCache.json", "hourWeatherCache-bk.json")
 
         # Report to log what tweaks are configured as
-        logger.log(myName, "Tweaks Config right before display loop: " + str(tweaks))
+        logger.log(myName, "Tweaks Config right before display loop: " + str(model.tweaks))
 
         print("Waiting for data...")
-        while(getter.getState() != NewJSON(stateStack())):
+        while(getter.getState() != NewJSON(stateStack(model))):
             # Handle any errors that may exist
             error = getter.getState().handleError()
             if(error != None):
@@ -460,13 +311,13 @@ def main():
         logger.log(myName, "Recieved JSON. Ready to display...")
         
         # Calculate IP if webInterface or show-IP is enabled
-        if(webInterface or (showIP == 1)):
+        if(model.webInterface or (model.showIP == 1)):
             # Set our IP variable, we'll display this later.
-            ip = getIP(tweaks["ip-network"])
+            ip = getIP(model.ipNet)
 
         # Now that JSON things have been worked out, call for the web interface to start if requested.
-        if(webInterface):
-            webThread = threading.Thread(target=web.main, args=[tweaks["port"], logger], daemon=True)
+        if(model.webInterface):
+            webThread = threading.Thread(target=web.main, args=[model, logger], daemon=True)
             webThread.start()
 
             # Wait for Flask to get running before continuing
@@ -507,9 +358,9 @@ def main():
         # This ENTIRE thing should be repeated
         while(True):
             # Get current time (if enabled)
-            if(tweaks["time"] != 0):
+            if(model.useClock != 0):
                 # Figure out input string to strftime
-                if(tweaks["time"] == 2):
+                if(model.useClock == 2):
                     timeMakStr = "%H:%M"
                 else:
                     timeMakStr = "%I:%M %p"
@@ -528,7 +379,7 @@ def main():
             # a web server URL, and/or a clock. Thus, use a variable to help us out.
             infoStr = ""
             # If web server was requested, print out IP Address
-            if(webInterface):
+            if(model.webInterface):
                 # Check if IP is 127.0.0.1. If this IP is given, no IP could be estaablished.
                 if(str(ip).strip() == "127.0.0.1"):
                     infoStr += "IP Address could not be calculated."
@@ -543,7 +394,7 @@ def main():
             
             # Clock. Right now this will be a couple spaces over from rest, but eventually I want it
             # to be justified to the right of the terminal window.
-            if(tweaks["time"] != 0):
+            if(model.useClock != 0):
                 if(infoStr != ""):
                     infoStr += "   " + timeStr
                 else:
@@ -586,7 +437,7 @@ def main():
                         os.rename("hourWeatherCache.json", "hourWeatherCache-bk.json")
                         logger.log(myName, "Transfering Hourly JSON files to backup...")
                 
-                if(getter.getState() == Waiting(stateStack) and i > 1):
+                if(getter.getState() == Waiting(stateStack(model)) and i > 1):
                     logger.log(myName, "New JSON recieved. Starting the cycle again.")
                     getter.resetState()
 

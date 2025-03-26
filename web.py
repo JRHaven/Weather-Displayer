@@ -17,6 +17,7 @@ Weather-Displayer. If not, see <https://www.gnu.org/licenses/>.
 
 from time import sleep
 from main import artDisplay
+from Model import Model
 import flask, os, requests, json, time, threading, logging, Logger
 
 # We're going to need to create a start-time variable to calculate uptime for logging purposes
@@ -495,7 +496,7 @@ def hourly():
     return flask.render_template("allinfo.htm", title=getTitles(hourData), shortDesc=getShortForecasts(hourData), temp=getTemps(hourData),\
         longDesc=getDetailForecasts(hourData), unit=hourData["properties"]["periods"][0]["temperatureUnit"])
 
-def main(port, mainLogger: Logger):
+def main(model: Model, mainLogger: Logger):
     # Register logger
     global logger
     logger = mainLogger
@@ -505,8 +506,8 @@ def main(port, mainLogger: Logger):
     getInfo()
 
     # Run flask in a seperate thread
-    logger.log("WEB      ", "Creating and starting Flask thread with Debug false, host 0.0.0.0, port" + str(port) + ", and no reloader...")
-    flaskThread = threading.Thread(target=iamweb.run, kwargs={"debug":False, "host":"0.0.0.0", "port":port, "use_reloader":False})
+    logger.log("WEB      ", "Creating and starting Flask thread with Debug false, host 0.0.0.0, port" + str(model.srvPort) + ", and no reloader...")
+    flaskThread = threading.Thread(target=iamweb.run, kwargs={"debug":False, "host":"0.0.0.0", "port":model.srvPort, "use_reloader":False})
     flaskThread.start()
 
     # Loop to change info every 15 minutes

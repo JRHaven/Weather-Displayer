@@ -30,9 +30,6 @@ startTime = time.time()
 # Global variables
 getterRun = 1
 
-def stateStack(model: Model) -> tuple:
-    return (logger, model.crashOnHTTPError, model.useTimer)
-
 def decodeTemps(data):
     temps = []
     periods = data["properties"]["periods"]
@@ -298,7 +295,7 @@ def main():
         logger.log(myName, "Tweaks Config right before display loop: " + str(model.tweaks))
 
         print("Waiting for data...")
-        while(getter.getState() != NewJSON(stateStack(model))):
+        while(getter.getState() != NewJSON(model, logger)):
             # Handle any errors that may exist
             error = getter.getState().handleError()
             if(error != None):
@@ -437,7 +434,7 @@ def main():
                         os.rename("hourWeatherCache.json", "hourWeatherCache-bk.json")
                         logger.log(myName, "Transfering Hourly JSON files to backup...")
                 
-                if(getter.getState() == Waiting(stateStack(model)) and i > 1):
+                if(getter.getState() == Waiting(model, logger) and i > 1):
                     logger.log(myName, "New JSON recieved. Starting the cycle again.")
                     getter.resetState()
 

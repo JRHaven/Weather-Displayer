@@ -18,29 +18,18 @@ Weather-Displayer. If not, see <https://www.gnu.org/licenses/>.
 # Base Getter Class that will be expanded for different states
 
 from abc import ABC, abstractmethod
+from Model import Model
+from Logger import Logger
 import urllib.request, socket
 
 class State(ABC):
     __logger = None
 
-    # Configurables from .weatherdisprc
-    __crashError = True
-    __useTimer = 0
-
-    # State properties that will be changed by extended states
-    __stateCode = -1
-    __stateName = ""
-
     # constructor
-    def __init__(self, stateStack: tuple):
-        self.__crashError = stateStack[1]
-        self.__logger = stateStack[0]
-
-        # Handle no timer given
-        if(len(stateStack) > 2):
-            self.__useTimer = stateStack[2]
-        else:
-            self.useTimer = 0
+    def __init__(self, model: Model, logger: Logger):
+        self.__model = model
+        self.__logger = logger
+        self.__useTimer = model.useTimer
 
         self.setProperties()
 
@@ -51,7 +40,7 @@ class State(ABC):
 
     # Other getters and setters when necessary
     def getCode(self) -> int:
-        return self.__stateCode
+        return self._stateCode
 
 
     # What to do on error
@@ -62,13 +51,13 @@ class State(ABC):
 
     # Magic methods
     def __eq__(self, otherState: object):
-        return self.__stateCode == otherState.getCode()
+        return self._stateCode == otherState.getCode()
     
     def __str__(self):
         return self.__stateName
     
     def __repr__(self):
-        return str(self.__stateCode) + ":" + self.__stateName
+        return str(self._stateCode) + ":" + self.__stateName
     
     def __int__(self):
         return tself.__stateCode

@@ -24,7 +24,7 @@ from Logger import Logger
 class WrongURL(State):
     # Set properties
     def setProperties(self):
-        self.__stateCode = 6
+        self._stateCode = 6
         self.__stateName = "Wrong URL or URL not accessible (HTTP 404 Error)"
 
 
@@ -35,7 +35,7 @@ class WrongURL(State):
         print("\nRecieved a 404 error. This likely means the url given \
 in the url file is incorrect.\nRetry the process of finding the API URL and try again.")
 
-        if(self.__useTimer == 1):
+        if(self.__model.useTimer == True):
             self.__logger.log("STATE ", "Configured to quit automatically. Will close in 60 seconds.")
             sleep(60)
         else:
@@ -47,7 +47,7 @@ in the url file is incorrect.\nRetry the process of finding the API URL and try 
 class NewJSON(State):
     # Set properties
     def setProperties(self):
-        self.__stateCode = 5
+        self._stateCode = 5
         self.__stateName = "New JSON Retrieved"
 
 
@@ -59,7 +59,7 @@ class NewJSON(State):
 class Waiting(State):
     # Set properties
     def setProperties(self):
-        self.__stateCode = 0
+        self._stateCode = 0
         self.__stateName = "Waiting"
 
 
@@ -71,7 +71,7 @@ class Waiting(State):
 class NoHourJSON(State):
     # Set properties
     def setProperties(self):
-        self.__stateCode = 3
+        self._stateCode = 3
         self.__stateName = "No hourly JSON data"
 
 
@@ -81,7 +81,7 @@ class NoHourJSON(State):
         system("clear")
         print("\nERROR: Could not retrieve hourly weather data.\nWeather-Displayer cannot continue.")
 
-        if(self.__useTimer == 1):
+        if(self.__model.useTimer == True):
             self.__logger.log("STATE ", "Configured to quit automatically. Will close in 60 seconds.")
             sleep(60)
         else:
@@ -94,7 +94,7 @@ class NoHourJSON(State):
 class NoBackups(State):
     # Set properties
     def setProperties(self):
-        self.__stateCode = 8
+        self._stateCode = 8
         self.__stateName = "No Backups"
 
 
@@ -104,7 +104,7 @@ class NoBackups(State):
         system("clear")
         print("\nWas unable to acquire needed backups to sort out an error.\nWeather-Displayer cannot continue.")
 
-        if(self.__useTimer == 1):
+        if(self.__model.useTimer == True):
             self.__logger.log("STATE ", "Configured to quit automatically. Will close in 60 seconds.")
             sleep(60)
         else:
@@ -117,7 +117,7 @@ class NoBackups(State):
 class JSONWrongURL(State):
     # Set properties
     def setProperties(self):
-        self.__stateCode = 10
+        self._stateCode = 10
         self.__stateName = "json.decoder.JSONDecodeError - Wrong URL"
 
 
@@ -128,7 +128,7 @@ class JSONWrongURL(State):
         print("\nEncountered JSON decode error. This is likely the\nresult of an incorrect url.\n\
 Retry the process of finding the API URL and try again.")
 
-        if(self.__useTimer == 1):
+        if(self.__model.useTimer == True):
             self.__logger.log("STATE ", "Configured to quit automatically. Will close in 60 seconds.")
             sleep(60)
         else:
@@ -141,7 +141,7 @@ Retry the process of finding the API URL and try again.")
 class OutDateJSON(State):
     # Set properties
     def setProperties(self):
-        self.__stateCode = 4
+        self._stateCode = 4
         self.__stateName = "Provided JSON out of date"
 
 
@@ -156,7 +156,7 @@ class OutDateJSON(State):
 class ServerError(State):
     # Set properties
     def setProperties(self):
-        self.__stateCode = 7
+        self._stateCode = 7
         self.__stateName = "HTTP 503 Error"
 
 
@@ -168,7 +168,7 @@ class ServerError(State):
 meaning the server down, possibly under maintenance.\n\
 Weather-Displayer cannot continue. Try again in a few hours.")
 
-        if(self.__useTimer == 1):
+        if(self.__model.useTimer == True):
             self.__logger.log("STATE ", "Configured to quit automatically. Will close in 60 seconds.")
             sleep(60)
         else:
@@ -181,7 +181,7 @@ Weather-Displayer cannot continue. Try again in a few hours.")
 class TooManyErrors(State):
     # Set properties
     def setProperties(self):
-        self.__stateCode = 9
+        self._stateCode = 9
         self.__stateName = "Too Many 500 Errors"
 
 
@@ -193,7 +193,7 @@ class TooManyErrors(State):
 but not now. This is a NWS issue. Weather-Displayer cannot continue.\n\
 Try again in a couple hours.")
 
-        if(self.__useTimer == 1):
+        if(self.__model.useTimer == True):
             self.__logger.log("STATE ", "Configured to quit automatically. Will close in 60 seconds.")
             sleep(60)
         else:
@@ -206,7 +206,7 @@ Try again in a couple hours.")
 class NoGenJSON(State):
     # Set properties
     def setProperties(self):
-        self.__stateCode = 2
+        self._stateCode = 2
         self.__stateName = "No general JSON data"
 
 
@@ -216,7 +216,7 @@ class NoGenJSON(State):
         system("clear")
         print("\nERROR: Could not retrieve general weather data.\nWeather-Displayer cannot continue.")
 
-        if(self.__useTimer == 1):
+        if(self.__model.useTimer == True):
             self.__logger.log("STATE ", "Configured to quit automatically. Will close in 60 seconds.")
             sleep(60)
         else:
@@ -229,7 +229,7 @@ class NoGenJSON(State):
 class NoURL(State):
     # Set properties
     def setProperties(self):
-        self.__stateCode = 1
+        self._stateCode = 1
         self.__stateName = "No URL File"
 
 
@@ -242,7 +242,7 @@ If this is your first time running the script, you may have not\nput in the \
 destination URL. If you don't know how to do this,\ngo to https://github.com/JRHaven/Weather-Displayer\n\
 and read the README.md file to explain the steps to do this.")
 
-        if(self.__useTimer == 1):
+        if(self.__model.useTimer == True):
             self.__logger.log("STATE ", "Configured to quit automatically. Will close in 60 seconds.")
             sleep(60)
         else:

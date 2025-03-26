@@ -53,18 +53,45 @@ class Model:
         # and assign default values if they don't
         if("web-server" in self.__tweaks):
             self.__webInterface = bool(self.__tweaks["web-server"])
+        else:
+            self.__logger("MODEL ", "web-server not in config! Continuing with default value (false)")
+            self.__webInterface = False
+        
         if("show-IP" in self.__tweaks):
             self.__showIP = bool(self.__tweaks["show-IP"])
+        else:
+            self.__logger("MODEL ", "show-IP not in config! Continuing with default value (false)")
+            self.__showIP = False
+        
         if("time" in self.__tweaks):
             self.__useClock = self.__tweaks["time"]
+        else:
+            self.__logger("MODEL ", "time not in config! Continuing with default value (0)")
+            self.__useClock = 0
+        
         if("stop-on-http-error" in self.__tweaks):
             self.__crashOnHTTPError = bool(self.__tweaks["stop-on-http-error"])
+        else:
+            self.__logger("MODEL ", "stop-on-http-error not in config! Continuing with default value (true)")
+            self.__crashOnHTTPError = True
+        
         if("close-timer" in self.__tweaks):
             self.__useTimer = bool(self.__tweaks["stop-on-http-error"])
+        else:
+            self.__logger("MODEL ", "close-timer not in config! Continuing with default value (false)")
+            self.__useTimer = False
+        
         if("ip-network" in self.__tweaks):
             self.__ipNet = self.__tweaks["ip-network"]
+        else:
+            self.__logger("MODEL ", "ip-network not in config! Continuing with default value (10)")
+            self.__ipNet = 10
+        
         if("port" in self.__tweaks):
             self.__srvPort = self.__tweaks["port"]
+        else:
+            self.__logger("MODEL ", "port not in config! Continuing with default value (5000)")
+            self.__srvPort = 5000
 
     # Properties for getters. Attributes are and should be read-only.
     @property

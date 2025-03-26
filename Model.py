@@ -200,7 +200,7 @@ port=80""")
         return self.__ipNet
     
     @property
-    def srvPort(self) -> bool:
+    def srvPort(self) -> int:
         return self.__srvPort
     
     @property

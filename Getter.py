@@ -34,10 +34,6 @@ class Getter():
     def getState(self):
         return self.__state
 
-    # State resetter - a proper setter isn't necessary
-    def resetState(self):
-        self.__state = Waiting(self.__model, self.__logger)
-
     # Deal with permissions only if web-server is enabled. If it is disabled, the program is probably not being run
     # as sudo and thus doesn't require changing file permissions.
     def __permGrant(self, file):
@@ -201,6 +197,6 @@ class Getter():
                 sleep(1)
                 self.__state = Waiting(self.__model, self.__logger)
                 self.__logger.log(myName, "Reset state to Waiting")
-                sleep(900)
+                sleep(30)
             else:
                 break

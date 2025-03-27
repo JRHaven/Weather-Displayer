@@ -409,6 +409,8 @@ def main():
                     titles[2] + "'s Temperature:", str(currentTemps[2]))
             print("The wind:", windDir[0], "at", windSpeed[0] + ".")
 
+            # To avoid endless loops, wait a second
+            sleep(1)
             while(True):
                 sleep(0.5)
                 if(((i % 120) == 0) and (i > 1)):
@@ -437,7 +439,6 @@ def main():
                 
                 if(getter.getState() == NewJSON(model, logger) and i > 1):
                     logger.log(myName, "New JSON recieved. Starting the cycle again.")
-                    getter.resetState()
 
                     # Reset Counter
                     i = 0
@@ -454,6 +455,7 @@ def main():
                             break
                         except json.decoder.JSONDecodeError as e:
                             logger.log(myName, "Couldn't decode the JSON. Trying again. Next few lines contain error information.")
+                            logger.log(myName, str(e))
                             sleep(1)
                         except FileNotFoundError:
                             logger.log(myName, "Could not find JSON. Trying again in 2 secs...")

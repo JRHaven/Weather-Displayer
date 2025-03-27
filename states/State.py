@@ -27,9 +27,8 @@ class State(ABC):
 
     # constructor
     def __init__(self, model: Model, logger: Logger):
-        self.__model = model
-        self.__logger = logger
-        self.__useTimer = model.useTimer
+        self._model = model
+        self._logger = logger
 
         self.setProperties()
 

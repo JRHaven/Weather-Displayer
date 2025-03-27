@@ -150,6 +150,9 @@ class OutDateJSON(State):
     def handleError(self):
         self._logger.log("STATE ", "JSON data was out of date, as such that nothing could be displayed.")
         system("cowsay -d \"Inaccurate Data\"")
+
+        # WAIT!!!! for getter to continue going
+        sleep(300)
         
         return None
 

@@ -299,6 +299,7 @@ def main():
             # Handle any errors that may exist
             error = getter.getState().handleError()
             if(error != None):
+                logger.log(myName, "Recieved error from state - quit code " + str(error) + ". Quitting!")
                 return error
             
             # wait so we don't overload cpu

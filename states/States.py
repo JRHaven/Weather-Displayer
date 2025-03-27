@@ -65,7 +65,7 @@ class Waiting(State):
 
     # There aren't any errors to handle in this stage...
     def handleError(self):
-        return 0
+        return None
 
 
 class NoHourJSON(State):

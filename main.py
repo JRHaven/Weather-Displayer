@@ -315,7 +315,7 @@ def main():
 
         # Now that JSON things have been worked out, call for the web interface to start if requested.
         if(model.webInterface):
-            webThread = threading.Thread(target=web.main, args=[model, logger], daemon=True)
+            webThread = threading.Thread(target=web.main, args=[model, logger, getter], daemon=True)
             webThread.start()
 
             # Wait for Flask to get running before continuing

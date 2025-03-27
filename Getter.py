@@ -197,6 +197,6 @@ class Getter():
                 sleep(1)
                 self.__state = Waiting(self.__model, self.__logger)
                 self.__logger.log(myName, "Reset state to Waiting")
-                sleep(30)
+                sleep(900)
             else:
                 break

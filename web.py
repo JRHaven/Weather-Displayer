@@ -18,6 +18,8 @@ Weather-Displayer. If not, see <https://www.gnu.org/licenses/>.
 from time import sleep
 from main import artDisplay
 from Model import Model
+from Getter import Getter
+from states.States import *
 import flask, os, requests, json, time, threading, logging, Logger
 
 # We're going to need to create a start-time variable to calculate uptime for logging purposes
@@ -496,7 +498,7 @@ def hourly():
     return flask.render_template("allinfo.htm", title=getTitles(hourData), shortDesc=getShortForecasts(hourData), temp=getTemps(hourData),\
         longDesc=getDetailForecasts(hourData), unit=hourData["properties"]["periods"][0]["temperatureUnit"])
 
-def main(model: Model, mainLogger: Logger):
+def main(model: Model, mainLogger: Logger, getter: Getter):
     # Register logger
     global logger
     logger = mainLogger
@@ -510,7 +512,14 @@ def main(model: Model, mainLogger: Logger):
     flaskThread = threading.Thread(target=iamweb.run, kwargs={"debug":False, "host":"0.0.0.0", "port":model.srvPort, "use_reloader":False})
     flaskThread.start()
 
-    # Loop to change info every 15 minutes
+    # Give time for getter to reset state
+    sleep(10)
+
+    # refresh loop
     while(True):
-        sleep(900)
+        # Wait until new JSON from getter
+        while(getter.getState() != NewJSON(model, logger)):
+            sleep(0.5)
+        
         getInfo()
+        sleep(1)

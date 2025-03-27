@@ -197,11 +197,11 @@ class Getter():
             if(self.__state.handleError() == None):
                 # Let main know that we have retrieved JSON
                 self.__state = NewJSON(self.__model, self.__logger)
-                self.__logger.log(myName, "JSON all dealt with here! Getter code set to value of 5...")
+                self.__logger.log(myName, "JSON all dealt with here! Set getter state to NewJSON...")
                 # Tell main that we are now waiting for the next thing, after a second delay
                 sleep(1)
                 self.__state = Waiting(self.__model, self.__logger)
-                self.__logger.log(myName, "Reset state to waiting")
+                self.__logger.log(myName, "Reset state to Waiting")
                 sleep(900)
             else:
                 break

@@ -435,7 +435,7 @@ def main():
                         os.rename("hourWeatherCache.json", "hourWeatherCache-bk.json")
                         logger.log(myName, "Transfering Hourly JSON files to backup...")
                 
-                if(getter.getState() == Waiting(model, logger) and i > 1):
+                if(getter.getState() == NewJSON(model, logger) and i > 1):
                     logger.log(myName, "New JSON recieved. Starting the cycle again.")
                     getter.resetState()
 

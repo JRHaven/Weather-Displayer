@@ -85,7 +85,7 @@ class Model:
             self.__crashOnHTTPError = True
         
         if("close-timer" in self.__tweaks):
-            self.__useTimer = bool(self.__tweaks["stop-on-http-error"])
+            self.__useTimer = bool(self.__tweaks["close-timer"])
         else:
             self.__logger("MODEL ", "close-timer not in config! Continuing with default value (false)")
             self.__useTimer = False

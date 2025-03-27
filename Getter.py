@@ -42,13 +42,12 @@ class Getter():
     # as sudo and thus doesn't require changing file permissions.
     def __permGrant(self, file):
         if(self.__model.webInterface):
-            global logger
-            logger.log("GETTER", "Web Interface enabled. Granting full permission to " + file + "...")
+            self.__logger.log("GETTER", "Web Interface enabled. Granting full permission to " + file + "...")
             # Use try to ignore if file not exists error
             try:
                 os.chmod(file, 0o777)
             except FileNotFoundError:
-                logger.log(myName, file + " vanished! Permissions could not be granted. Moving on!")
+                self.__logger.log(myName, file + " vanished! Permissions could not be granted. Moving on!")
 
     # Main function
     def run(self):

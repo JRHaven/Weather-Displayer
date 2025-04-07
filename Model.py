@@ -32,7 +32,7 @@ class Model:
         # If the config file doesn't exist, initialize!
         self.__logger.log("MODEL ", "Loading configurations...")
         if(not os.path.exists(".weatherdisprc")):
-            logger.log(myName, ".weatherdisprc doesn't exist! Initializing...")
+            self.__logger.log("MODEL ", ".weatherdisprc doesn't exist! Initializing...")
             self.__initConfig()
         
         with open(".weatherdisprc", "r") as config:
@@ -103,7 +103,7 @@ class Model:
             self.__srvPort = 5000
     
     # Initialize config if it doesn't exist yet
-    def __initConfig():
+    def __initConfig(self):
         with open(".weatherdisprc", "w") as conf:
             conf.write("""\
 # Weather-Displayer Config File

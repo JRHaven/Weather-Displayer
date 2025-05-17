@@ -42,13 +42,14 @@ After this, you need to download a program called "cowsay". After downloading Py
 in your PATH environment variable, you can run `pip install cowsay` in an **Administrative** command line. You will also need to run `pip install flask`
 in order to install the flask library to run the web frontend, and `pip install requests` to install the urllib library, which downloads the JSON contents from the NWS API.
 
-You may also want to change lines 560 and 758 in `main.py` from `os.system("clear")` to `os.system("cls")`.
+You may also want to change lines 368 in `main.py` from `os.system("clear")` to `os.system("cls")`.
 
 ### MacOS
 I am not familiar with MacOS, nor do I have a Mac to test this on. Similar to Windows, **I cannot guarantee any sort of stable functionality when running on anything other than
 Linux**. As for installation, you basically install Python, Cowsay, Flask, and Requests, then download the project.
 
 ### Linux
+#### Install Python
 Not much setup should be needed on Linux, the vast majority of distros already have Python installed. But if you don't, run:
 
 Debian/Ubuntu: `sudo apt install python3`
@@ -56,9 +57,7 @@ Debian/Ubuntu: `sudo apt install python3`
 Red Hat/Fedora: `sudo dnf install python3`
 
 Arch (as root): `pacman -S python`
-
-
-
+#### Install Cowsay
 You will also need to install a program called "cowsay". This most likely isn't installed on your distribution.
 
 Debian/Ubuntu: `sudo apt install cowsay`
@@ -66,9 +65,7 @@ Debian/Ubuntu: `sudo apt install cowsay`
 Red Hat/Fedora: `sudo dnf install cowsay`
 
 Arch (as root): `pacman -S cowsay`
-
-
-
+#### Install Pip
 You will need to install the Flask library for the web interface. To do this, you'll need to first ensure that the ```pip``` package is installed, as it isn't as commonly installed as Python is.
 
 Debian/Ubuntu: `sudo apt install python3-pip`
@@ -76,9 +73,7 @@ Debian/Ubuntu: `sudo apt install python3-pip`
 Red Hat/Fedora: `sudo dnf install python3-pip`
 
 Arch (as root): `pacman -S python-pip`
-
-
-
+#### Install Libraries
 Now you'll need to install the Flask and Requests libraries through pip.
 
 On any distro: `sudo pip install flask requests`

@@ -168,7 +168,7 @@ def artDisplay(forecast):
     ---/fff--///-o-///-o-///---/g/---///
     ///-fff//---/ooooooo/--gggggg-///---
     ---///---///---///---///---///---///'''
-    elif("haze" in forecast.lower()):
+    elif("haze" in forecast.lower() or "smoke" in forecast.lower()):
         return '''    \\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/
     /\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\
     \\/\\/\\/\\/\\/\\/\\/\\/\\/\\/ ________ \\/

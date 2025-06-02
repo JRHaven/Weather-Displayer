@@ -254,3 +254,28 @@ and read the README.md file to explain the steps to do this.")
         
         self._logger.log("STATE ", "Quitting with exit value of 1!")
         return 1
+
+class InvalidURL(State):
+    # Set properties
+    def setProperties(self):
+        self._stateCode = 11
+        self.__stateName = "Empty or Invalid URL"
+
+
+    # Empty or invalid URL
+    def handleError(self):
+        self._logger.log("STATE ", "Caught an invalid url. May be empty or doesn't match regex. Prompting user to quit...")
+        system("clear")
+        print("\nERROR: Invalid Destination URL!\n\
+The URL entered in the URL file is either empty or invalid.\n\n\
+You should re-enter the NWS API URL into the url file. If you don't know how to do this,\ngo to https://github.com/JRHaven/Weather-Displayer\n\
+and read the README.md file to explain the steps to do this.")
+
+        if(self._model.useTimer == True):
+            self._logger.log("STATE ", "Configured to quit automatically. Will close in 60 seconds.")
+            sleep(60)
+        else:
+            input("Press enter to exit...")
+        
+        self._logger.log("STATE ", "Quitting with exit value of 1!")
+        return 1

@@ -19,14 +19,6 @@ The wind: E at 10 mph.
 ## My Usecase
 I'm making this to replace my Accu-Rite Weather station that broke. This will be run on a Raspberry Pi and Raspberry Pi Touchscreen
 
-## Description of the Scripts
-
-### main.py
-The main part of the script that interprets data from the NWS API and displays it on the screen. Also in charge of getting JSON with the getter() function
-
-### web.py
-This controls the web interface, using the Flask library
-
 ## Installation
 If you want the latest stable version, you can download the project from the releases section. If you want to have the "nightly" version, you can use a `git clone`
 command to clone this repository and continue from there.
@@ -98,6 +90,26 @@ option best fit for you.
    ![Resulting JSON](screenshots/URL.png)
 5. Put the URL in a file called `url`. Be sure there is no file extensions, especially if you are running Windows. This file should be in the same directory as the other Python files.
 6. You are ready to go! Run the `main.py` file and see your weather data!
+
+## Description of the files
+### main.py
+The main part of the script that interprets data from the NWS API and displays it on the screen. Sets up rest of program on startup (registers logger, starts getter, etc.)
+
+### web.py
+This controls the web interface, using the Flask library
+
+### Getter.py
+The engine that gets new JSON from that National Weather Service API and deals with any issues that may arise from that
+
+### Logger.py
+Logger object that can be passed throughout the different parts of the program to log happenings in the log file
+
+### Model.py
+Central "database" for the project; contains different settings that determins nuances of how Weather-Displayer should run, based on settings in the `.weathdisprc` file
+
+### States
+These are contained in the [states foler](states), but they are a way for the main displayer to know the happenings of the getter. These contain instructions for how to handle errors that may arise.
+More about these in their [README.md](states/README.md) file.
 
 ## Web Interface
 After getting the URL file sorted out, a basic installation of Weather-Displayer will work just fine. However, you would be missing out on its other feature: the

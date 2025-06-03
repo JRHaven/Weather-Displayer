@@ -207,6 +207,9 @@ class Getter():
                             sleep(900)
                         else:
                             break
+                else:
+                    self.__logger.log(myName, "ERROR: Invalid or empty URL! Changing state to InvalidURL!")
+                    self.__state = InvalidURL(self.__model, self.__logger)
             else:
                 self.__logger.log(myName, "ERROR: Invalid or empty URL! Changing state to InvalidURL!")
                 self.__state = InvalidURL(self.__model, self.__logger)

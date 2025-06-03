@@ -7,7 +7,7 @@ complicated if-statement handlage. In this way, we can make use of
 polymorphism to both check for and handle any errors that may happen between
 the getter thread and the displayer (main) thread.
 
-**There are 11 states as of the latest update**, starting with state 0.
+**There are 12 states as of the latest update**, starting with state 0.
 
 ## Map
 * State.py: The parent, abstract, "blueprint" object that handles getters and

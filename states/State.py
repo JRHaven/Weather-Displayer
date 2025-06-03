@@ -59,4 +59,4 @@ class State(ABC):
         return str(self._stateCode) + ":" + self.__stateName
     
     def __int__(self):
-        return tself.__stateCode
+        return self.__stateCode

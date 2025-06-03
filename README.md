@@ -42,7 +42,7 @@ After this, you need to download a program called "cowsay". After downloading Py
 in your PATH environment variable, you can run `pip install cowsay` in an **Administrative** command line. You will also need to run `pip install flask`
 in order to install the flask library to run the web frontend, and `pip install requests` to install the urllib library, which downloads the JSON contents from the NWS API.
 
-You may also want to change lines 368 in `main.py` from `os.system("clear")` to `os.system("cls")`.
+You may also want to change lines 368 in `main.py` from `os.system("clear")` to `os.system("cls")`, and throughout all the states in `states.py`.
 
 ### MacOS
 I am not familiar with MacOS, nor do I have a Mac to test this on. Similar to Windows, **I cannot guarantee any sort of stable functionality when running on anything other than

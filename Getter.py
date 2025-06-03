@@ -207,6 +207,9 @@ class Getter():
                             sleep(900)
                         else:
                             break
+            else:
+                self.__logger.log(myName, "ERROR: Invalid or empty URL! Changing state to InvalidURL!")
+                self.__state = InvalidURL(self.__model, self.__logger)
         else:
             # The file doesn't exist. Log this occasion and tell main.py to inform and quit
             self.__logger.log(myName, "ERROR: URL File doesn't exist! Informing and Quitting!")

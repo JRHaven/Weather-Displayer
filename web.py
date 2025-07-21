@@ -20,6 +20,7 @@ from main import artDisplay
 from Model import Model
 from Getter import Getter
 from states.States import *
+from re import findall
 import flask, os, requests, json, time, threading, logging, Logger
 
 # We're going to need to create a start-time variable to calculate uptime for logging purposes
@@ -32,6 +33,7 @@ flaskLogger.setLevel(logging.CRITICAL)
 # Global weather data variables
 data = ""
 hourData = ""
+url = ""
 
 # Global logger
 logger = None
@@ -438,13 +440,22 @@ initDirs()
 iamweb = flask.Flask(__name__, static_folder="static", template_folder="templates")
 
 # Initialize/Update JSON, Image
-def getInfo():
-    global data, hourData, logger
+def getInfo(getterURL):
+    global data, hourData, logger, url
     # Get JSON
     logger.log("WEB   ", "Getting weather info...")
     jsonData = getJSON()
     data = jsonData[0]
     hourData = jsonData[1]
+    
+    # Figure out what URL to provide
+    url = "https://www.weather.gov/"
+    PATTERN = r"[A-Z]{3}"
+
+    # Get local NWS office code from URL
+    NWS_OFFICES = findall(PATTERN, getterURL)
+    if(NWS_OFFICES > 0):
+        url += NWS_OFFICES[0].lower()
 
 # Get various values
 def getShortForecasts(data):
@@ -475,20 +486,21 @@ def getTitles(data):
 @iamweb.route("/")
 def display():
     # Use global weather data, logger
-    global data, hourData, logger
+    global data, hourData, logger, url
     logger.log("WEB   ", "Displaying main forecast page")
+
     currentWeather = [data["properties"]["periods"][0]["shortForecast"], hourData["properties"]["periods"][0]["temperature"], hourData["properties"]["periods"][0]["temperatureUnit"], data["properties"]["periods"][0]["detailedForecast"],\
-        artDisplay(data["properties"]["periods"][0]["shortForecast"])]
+        artDisplay(data["properties"]["periods"][0]["shortForecast"]), url]
     return flask.render_template("template.htm", currentWeather=currentWeather, title=getTitles(data), shortDesc=getShortForecasts(data),\
         temp=getTemps(data), longDesc=getDetailForecasts(data))
 
 @iamweb.route("/full")
 def fullForecast():
     # Only use general data - use global variable, as well as logger
-    global data, logger
+    global data, logger, url
     logger.log("WEB   ", "Displaying full forecast page")
     return flask.render_template("allinfo.htm", title=getTitles(data), shortDesc=getShortForecasts(data), temp=getTemps(data),\
-        longDesc=getDetailForecasts(data), unit=hourData["properties"]["periods"][0]["temperatureUnit"])
+        longDesc=getDetailForecasts(data), unit=hourData["properties"]["periods"][0]["temperatureUnit"], url=url)
 
 @iamweb.route("/hourly")
 def hourly():
@@ -496,7 +508,7 @@ def hourly():
     global hourlData, logger
     logger.log("WEB   ", "Displaying hourly page")
     return flask.render_template("allinfo.htm", title=getTitles(hourData), shortDesc=getShortForecasts(hourData), temp=getTemps(hourData),\
-        longDesc=getDetailForecasts(hourData), unit=hourData["properties"]["periods"][0]["temperatureUnit"])
+        longDesc=getDetailForecasts(hourData), unit=hourData["properties"]["periods"][0]["temperatureUnit"], url=url)
 
 def main(model: Model, mainLogger: Logger, getter: Getter):
     # Register logger
@@ -505,7 +517,7 @@ def main(model: Model, mainLogger: Logger, getter: Getter):
     
     # Get our things
     initDirs()
-    getInfo()
+    getInfo(getter.getURL())
 
     # Run flask in a seperate thread
     logger.log("WEB   ", "Creating and starting Flask thread with Debug false, host 0.0.0.0, port" + str(model.srvPort) + ", and no reloader...")

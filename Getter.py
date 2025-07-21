@@ -27,6 +27,7 @@ class Getter():
     def __init__(self, logger: Logger, model: Model):
         self.__logger = logger
         self.__model = model
+        self.__url = ""
 
         # Only set state after every other thing is set
         self.__state = Waiting(model, self.__logger)
@@ -34,6 +35,10 @@ class Getter():
     # Getter for state
     def getState(self):
         return self.__state
+    
+    # Getter for url
+    def getURL(self):
+        return self.__url
 
     # Deal with permissions only if web-server is enabled. If it is disabled, the program is probably not being run
     # as sudo and thus doesn't require changing file permissions.
@@ -79,6 +84,9 @@ class Getter():
                 
                 # does it match regex?
                 if(match(PATTERN, dest)):
+                    # yes, set url
+                    self.__url = dest
+
                     while(True):
                         # Counter for cooldown if need be
                         counter = 0

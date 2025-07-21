@@ -70,6 +70,9 @@ class Getter():
                 dest = destFile.read()
                 destFile.close()
             
+            # Report url to log
+            self.__logger.log(myName, "URL given from file: " + dest)
+
             # Protect against garbage data: string must follow basic http:// format
             #
             # (note: I'm intentionally designing this regex so that it can be open ended. If a user wants

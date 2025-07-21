@@ -450,12 +450,12 @@ def getInfo(getterURL):
     
     # Figure out what URL to provide
     url = "https://www.weather.gov/"
-    PATTERN = r"[A-Z]{3}"
+    PATTERN = r"/[A-Z]{3}/"
 
     # Get local NWS office code from URL
     NWS_OFFICES = findall(PATTERN, getterURL)
-    if(NWS_OFFICES > 0):
-        url += NWS_OFFICES[0].lower()
+    if(len(NWS_OFFICES) > 0):
+        url += NWS_OFFICES[0].lower()[1:-1]
 
 # Get various values
 def getShortForecasts(data):

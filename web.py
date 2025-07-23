@@ -454,6 +454,7 @@ def getInfo(getterURL):
 
     # Get local NWS office code from URL
     NWS_OFFICES = findall(PATTERN, getterURL)
+    logger.log("WEB   ", "NWS offices from URL: " + str(NWS_OFFICES))
     if(len(NWS_OFFICES) > 0):
         url += NWS_OFFICES[0].lower()[1:-1]
 

@@ -355,6 +355,8 @@ def main():
 
         # This ENTIRE thing should be repeated
         while(True):
+            logger.log(myName, "At beginning of display loop: counter = " + str(i))
+
             # Get current time (if enabled)
             if(model.useClock != 0):
                 # Figure out input string to strftime

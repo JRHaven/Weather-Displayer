@@ -26,7 +26,7 @@ class WrongURL(State):
     # Set properties
     def setProperties(self):
         self._stateCode = 6
-        self.__stateName = "Wrong URL or URL not accessible (HTTP 404 Error)"
+        self._stateName = "Wrong URL or URL not accessible (HTTP 404 Error)"
 
 
     # Handle inability to get hourly weather JSON data
@@ -49,7 +49,7 @@ class NewJSON(State):
     # Set properties
     def setProperties(self):
         self._stateCode = 5
-        self.__stateName = "New JSON Retrieved"
+        self._stateName = "New JSON Retrieved"
 
 
     # There is no error
@@ -61,7 +61,7 @@ class Waiting(State):
     # Set properties
     def setProperties(self):
         self._stateCode = 0
-        self.__stateName = "Waiting"
+        self._stateName = "Waiting"
 
 
     # There aren't any errors to handle in this stage...
@@ -73,7 +73,7 @@ class NoHourJSON(State):
     # Set properties
     def setProperties(self):
         self._stateCode = 3
-        self.__stateName = "No hourly JSON data"
+        self._stateName = "No hourly JSON data"
 
 
     # Handle inability to get hourly weather JSON data
@@ -96,7 +96,7 @@ class NoBackups(State):
     # Set properties
     def setProperties(self):
         self._stateCode = 8
-        self.__stateName = "No Backups"
+        self._stateName = "No Backups"
 
 
     # Handle inability to get hourly weather JSON data
@@ -119,7 +119,7 @@ class JSONWrongURL(State):
     # Set properties
     def setProperties(self):
         self._stateCode = 10
-        self.__stateName = "json.decoder.JSONDecodeError - Wrong URL"
+        self._stateName = "json.decoder.JSONDecodeError - Wrong URL"
 
 
     # Handle inability to get hourly weather JSON data
@@ -143,7 +143,7 @@ class OutDateJSON(State):
     # Set properties
     def setProperties(self):
         self._stateCode = 4
-        self.__stateName = "Provided JSON out of date"
+        self._stateName = "Provided JSON out of date"
 
 
     # Handle situation when JSON is out of date
@@ -161,7 +161,7 @@ class ServerError(State):
     # Set properties
     def setProperties(self):
         self._stateCode = 7
-        self.__stateName = "HTTP 503 Error"
+        self._stateName = "HTTP 503 Error"
 
 
     # Handle inability to get hourly weather JSON data
@@ -186,7 +186,7 @@ class TooManyErrors(State):
     # Set properties
     def setProperties(self):
         self._stateCode = 9
-        self.__stateName = "Too Many 500 Errors"
+        self._stateName = "Too Many 500 Errors"
 
 
     # Handle inability to get hourly weather JSON data
@@ -211,7 +211,7 @@ class NoGenJSON(State):
     # Set properties
     def setProperties(self):
         self._stateCode = 2
-        self.__stateName = "No general JSON data"
+        self._stateName = "No general JSON data"
 
 
     # Handle inability to get general weather JSON data
@@ -234,7 +234,7 @@ class NoURL(State):
     # Set properties
     def setProperties(self):
         self._stateCode = 1
-        self.__stateName = "No URL File"
+        self._stateName = "No URL File"
 
 
     # Handle no URL file error
@@ -259,7 +259,7 @@ class InvalidURL(State):
     # Set properties
     def setProperties(self):
         self._stateCode = 11
-        self.__stateName = "Empty or Invalid URL"
+        self._stateName = "Empty or Invalid URL"
 
 
     # Empty or invalid URL

@@ -30,11 +30,17 @@ class Getter():
         self.__url = ""
 
         # Only set state after every other thing is set
+        self.__logger.log("GETTER", "Initializing state as Waiting")
         self.__state = Waiting(model, self.__logger)
     
     # Getter for state
     def getState(self):
         return self.__state
+    
+    # Private state setter
+    def __setState(self, newState: State):
+        self.__logger.log("GETTER", "Changing state from " + str(self.__state) + " to " + str(newState))
+        self.__state = newState
     
     # Getter for url
     def getURL(self):
@@ -128,10 +134,10 @@ class Getter():
                                         os.rename("hourWeatherCache-bk.json", "hourWeatherCache.json")
                                         os.rename("weatherCache-bk.json", "weatherCache.json")
                                     else:
-                                        self.__state = OutDateJSON(self.__model, self.__logger)
+                                        self.__setState(OutDateJSON(self.__model, self.__logger))
                                         
                                     sleep(300)
-                                    self.__state = Waiting(self.__model, self.__logger)
+                                    self.__setState(Waiting(self.__model, self.__logger))
                                     #continue
                                 else:
                                     # Use global variable webInterface
@@ -162,7 +168,7 @@ class Getter():
                                     continue
                                 elif(e.code == 404):
                                     self.__logger.log(myName, "HTTP 404 Error. Notifying main and quitting!")
-                                    self.__state = WrongURL(self.__model, self.__logger)
+                                    self.__setState(WrongURL(self.__model, self.__logger))
                                     break
                                 elif(e.code == 503):
                                     criticalHTTPErrorHandler(myName, 503)
@@ -183,7 +189,7 @@ class Getter():
                                 else:
                                     if(os.path.exists("weatherCache.json") == False):
                                         self.__logger.log(myName, "CRITICAL ERROR! No long-term backup info to display! Quitting, there is nothing to do!")
-                                        self.__state = NoGenJSON(self.__model, self.__logger)
+                                        self.__setState(NoGenJSON(self.__model, self.__logger))
                                         break
                                     else:
                                         self.__logger.log(myName, "Long-Term backups were avalible, using those. Nothing to do now until next cycle.")
@@ -195,36 +201,34 @@ class Getter():
                                 else:
                                     if(os.path.exists("hourWeatherCache.json") == False):
                                         self.__logger.log(myName, "CRITICAL ERROR! No hourly backup info to display! Quitting, there is nothing to do!")
-                                        self.__state = NoHourJSON(self.__model, self.__logger)
+                                        self.__setState(NoHourJSON(self.__model, self.__logger))
                                     else:
                                         print("Backups for one weather script is already avalible. There is nothing to do.")
                                         self.__logger.log(myName, "Hourly backups were avalible, using those. Nothing to do now until next cycle.")
                                 break
                             except json.decoder.JSONDecodeError:
                                 self.__logger.log(myName, "Encountered JSON decode error. Informing main and quitting...")
-                                self.__state = JSONWrongURL(self.__model, self.__logger)
+                                self.__setState(JSONWrongURL(self.__model, self.__logger))
                                 break
                             begin = False
 
                         # Handle errors, so that we quit this thread if need be
                         if(self.__state.handleError() == None):
                             # Let main know that we have retrieved JSON
-                            self.__state = NewJSON(self.__model, self.__logger)
-                            self.__logger.log(myName, "JSON all dealt with here! Set getter state to NewJSON...")
+                            self.__setState(NewJSON(self.__model, self.__logger))
                             # Tell main that we are now waiting for the next thing, after a second delay
                             sleep(1)
-                            self.__state = Waiting(self.__model, self.__logger)
-                            self.__logger.log(myName, "Reset state to Waiting")
+                            self.__setState(Waiting(self.__model, self.__logger))
                             sleep(900)
                         else:
                             break
                 else:
                     self.__logger.log(myName, "ERROR: Invalid or empty URL! Changing state to InvalidURL!")
-                    self.__state = InvalidURL(self.__model, self.__logger)
+                    self.__setState(InvalidURL(self.__model, self.__logger))
             else:
                 self.__logger.log(myName, "ERROR: Invalid or empty URL! Changing state to InvalidURL!")
-                self.__state = InvalidURL(self.__model, self.__logger)
+                self.__setState(InvalidURL(self.__model, self.__logger))
         else:
             # The file doesn't exist. Log this occasion and tell main.py to inform and quit
             self.__logger.log(myName, "ERROR: URL File doesn't exist! Informing and Quitting!")
-            self.__state = NoURL(self.__model, self.__logger)
+            self.__setState(NoURL(self.__model, self.__logger))

@@ -53,10 +53,10 @@ class State(ABC):
         return self._stateCode == otherState.getCode()
     
     def __str__(self):
-        return self.__stateName
+        return self._stateName
     
     def __repr__(self):
         return str(self._stateCode) + ":" + self.__stateName
     
     def __int__(self):
-        return self.__stateCode
+        return self._stateCode

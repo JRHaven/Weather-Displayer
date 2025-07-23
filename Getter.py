@@ -172,7 +172,7 @@ class Getter():
                                     self.__setState(WrongURL(self.__model, self.__logger))
                                     break
                                 elif(e.code == 503):
-                                    self.__logger.log(myName, "HTTP 503 Error. Handling with state...")
+                                    self.__logger.log(myName, "HTTP 503 Error. Ending the getter...")
                                     self.__setState(ServerError(self.__model, self.__logger))
                                     break
                             # This error occurs if there it cannot resolve the URL, meaning no internet access
@@ -224,6 +224,9 @@ class Getter():
                             self.__setState(Waiting(self.__model, self.__logger))
                             sleep(900)
                         else:
+                            if(self.__state.getCode() == 7):
+                                self.__setState(GetterEnded(self.__model, self.__logger))
+                            
                             break
                 else:
                     self.__logger.log(myName, "ERROR: Invalid or empty URL! Changing state to InvalidURL!")

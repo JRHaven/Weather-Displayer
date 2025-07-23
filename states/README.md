@@ -34,3 +34,5 @@ the getter thread and the displayer (main) thread.
   the JSON library threw a json.decoder.JSONDecodeError
 * 11 - InvalidURL: Provided URL is either empty or doesn't fit the standard
   HTTP URL format (e.g. https://subdomain.domain.com)
+* 12 - GetterEnded: Non-fatal state to keep display running when Getter isn't,
+  mainly used when a 503 error is detected but crashOnHTTPError is off

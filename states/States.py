@@ -182,6 +182,17 @@ Weather-Displayer cannot continue. Try again in a few hours.")
         return 1
 
 
+class GetterEnded(State):
+    # Set properties
+    def setProperties(self):
+        self._stateCode = 12
+        self._stateName = "Getter Ended"
+    
+    # No error, the getter has simply been ended
+    def handleError(self):
+        return None
+
+
 class TooManyErrors(State):
     # Set properties
     def setProperties(self):

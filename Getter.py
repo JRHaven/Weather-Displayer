@@ -20,6 +20,7 @@ from Logger import Logger
 from states.States import *
 from Model import Model
 from re import match
+from random import randint
 import json, os, math, time, urllib.request
 
 #def getter(logger: Logger):
@@ -106,7 +107,7 @@ class Getter():
                             counter += 1
                             # If it's been more than 10 tries and we haven't gotten anywhere, we need to give it a break.
                             if(counter > 10):
-                                criticalHTTPErrorHandler(myName, 500)
+                                self.__setState(TooManyErrors(self.__model, self.__logger))
                                 break
                             try:
                                 with urllib.request.urlopen(dest) as url:
@@ -171,7 +172,8 @@ class Getter():
                                     self.__setState(WrongURL(self.__model, self.__logger))
                                     break
                                 elif(e.code == 503):
-                                    criticalHTTPErrorHandler(myName, 503)
+                                    self.__logger.log(myName, "HTTP 503 Error. Handling with state...")
+                                    self.__setState(ServerError(self.__model, self.__logger))
                                     break
                             # This error occurs if there it cannot resolve the URL, meaning no internet access
                             # If there is backup info (which there should be), rename it so that it is avalible
@@ -211,6 +213,7 @@ class Getter():
                                 self.__setState(JSONWrongURL(self.__model, self.__logger))
                                 break
                             begin = False
+                        
 
                         # Handle errors, so that we quit this thread if need be
                         if(self.__state.handleError() == None):

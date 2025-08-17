@@ -42,7 +42,7 @@ class State(ABC):
         return self._stateCode
     
     def isFatal(self) -> bool:
-        return self.__fatal
+        return self._fatal
 
 
     # What to do on error

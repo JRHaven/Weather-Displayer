@@ -40,6 +40,9 @@ class State(ABC):
     # Other getters and setters when necessary
     def getCode(self) -> int:
         return self._stateCode
+    
+    def isFatal(self) -> bool:
+        return self.__fatal
 
 
     # What to do on error

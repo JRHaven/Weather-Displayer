@@ -475,6 +475,10 @@ def main():
                     nowTemp = decodeTemps(hourData)
 
                     break
+                else:
+                    if(getter.getState().handleError() != None):
+                        logger.log(myName, "Handled " + str(getter.getState()) + ", quitting!")
+                        exit(1)
 
                 if(i == 7200):
                     logger.log(myName, "Still waiting for JSON Data. Hasn't been recieved in a long time.")

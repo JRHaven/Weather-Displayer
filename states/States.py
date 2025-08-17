@@ -27,7 +27,7 @@ class WrongURL(State):
     def setProperties(self):
         self._stateCode = 6
         self._stateName = "Wrong URL or URL not accessible (HTTP 404 Error)"
-        self._fatal = True
+
 
 
     # Handle inability to get hourly weather JSON data
@@ -51,7 +51,6 @@ class NewJSON(State):
     def setProperties(self):
         self._stateCode = 5
         self._stateName = "New JSON Retrieved"
-        self._fatal = False
 
 
     # There is no error
@@ -64,7 +63,6 @@ class Waiting(State):
     def setProperties(self):
         self._stateCode = 0
         self._stateName = "Waiting"
-        self._fatal = False
 
 
     # There aren't any errors to handle in this stage...
@@ -77,7 +75,6 @@ class NoHourJSON(State):
     def setProperties(self):
         self._stateCode = 3
         self._stateName = "No hourly JSON data"
-        self._fatal = True
 
 
     # Handle inability to get hourly weather JSON data
@@ -101,7 +98,6 @@ class NoBackups(State):
     def setProperties(self):
         self._stateCode = 8
         self._stateName = "No Backups"
-        self._fatal = True
 
 
     # Handle inability to get hourly weather JSON data
@@ -125,7 +121,6 @@ class JSONWrongURL(State):
     def setProperties(self):
         self._stateCode = 10
         self._stateName = "json.decoder.JSONDecodeError - Wrong URL"
-        self._fatal = True
 
 
     # Handle inability to get hourly weather JSON data
@@ -150,7 +145,6 @@ class OutDateJSON(State):
     def setProperties(self):
         self._stateCode = 4
         self._stateName = "Provided JSON out of date"
-        self._fatal = False
 
 
     # Handle situation when JSON is out of date
@@ -169,7 +163,6 @@ class ServerError(State):
     def setProperties(self):
         self._stateCode = 7
         self._stateName = "HTTP 503 Error"
-        self._fatal = True
 
 
     # Handle inability to get hourly weather JSON data
@@ -195,7 +188,6 @@ class GetterEnded(State):
     def setProperties(self):
         self._stateCode = 12
         self._stateName = "Getter Ended"
-        self._fatal = False
     
     # No error, the getter has simply been ended
     def handleError(self):
@@ -207,7 +199,6 @@ class TooManyErrors(State):
     def setProperties(self):
         self._stateCode = 9
         self._stateName = "Too Many 500 Errors"
-        self._fatal = True
 
 
     # Handle inability to get hourly weather JSON data
@@ -233,7 +224,6 @@ class NoGenJSON(State):
     def setProperties(self):
         self._stateCode = 2
         self._stateName = "No general JSON data"
-        self._fatal = True
 
 
     # Handle inability to get general weather JSON data
@@ -257,7 +247,6 @@ class NoURL(State):
     def setProperties(self):
         self._stateCode = 1
         self._stateName = "No URL File"
-        self._fatal = True
 
 
     # Handle no URL file error
@@ -283,7 +272,6 @@ class InvalidURL(State):
     def setProperties(self):
         self._stateCode = 11
         self._stateName = "Empty or Invalid URL"
-        self._fatal = True
 
 
     # Empty or invalid URL
@@ -302,4 +290,14 @@ and read the README.md file to explain the steps to do this.")
             input("Press enter to exit...")
         
         self._logger.log("STATE ", "Quitting with exit value of 1!")
+        return 1
+
+class ErrorHandled(State):
+    # Set Properties
+    def setProperties(self):
+        self._stateCode = 13
+        self._stateName = "Fatal Error Handled"
+    
+    # It /was/ and error that has been handled; only need to return 1
+    def handleError(self):
         return 1

@@ -20,8 +20,10 @@ from Logger import Logger
 from states.States import *
 from Model import Model
 from re import match
-from random import randint
 import json, os, math, time, urllib.request
+
+# The random library is used only for testing and debugging purposes
+from random import randint
 
 #def getter(logger: Logger):
 class Getter():
@@ -222,10 +224,13 @@ class Getter():
                             # Tell main that we are now waiting for the next thing, after a second delay
                             sleep(1)
                             self.__setState(Waiting(self.__model, self.__logger))
-                            sleep(900)
+                            sleep(20)
                         else:
-                            if(self.__state.getCode() == 7):
+                            if(self.__state.getCode() == 7 and self.__model.useTimer):
                                 self.__setState(GetterEnded(self.__model, self.__logger))
+                            else:
+                                # Error was handled
+                                self.__setState(ErrorHandled(self.__model, self.__logger))
                             
                             break
                 else:

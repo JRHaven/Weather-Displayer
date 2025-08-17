@@ -20,13 +20,14 @@ Weather-Displayer. If not, see <https://www.gnu.org/licenses/>.
 from abc import ABC, abstractmethod
 from Model import Model
 from Logger import Logger
+from time import time
 import urllib.request, socket
 
 class State(ABC):
     __logger = None
 
     # constructor
-    def __init__(self, model: Model, logger: Logger):
+    def __init__(self, model: Model = Model(Logger(time())), logger: Logger = Logger(time())):
         self._model = model
         self._logger = logger
 
@@ -40,9 +41,6 @@ class State(ABC):
     # Other getters and setters when necessary
     def getCode(self) -> int:
         return self._stateCode
-    
-    def isFatal(self) -> bool:
-        return self._fatal
 
 
     # What to do on error

@@ -264,6 +264,9 @@ def getIP(network):
     # Return the local IP address as a string
     return ip
 
+def notExpectedState(getter: Getter) -> bool:
+    return getter.getState() != Waiting() and getter.getState() != NewJSON() and getter.getState() != GetterEnded()
+
 def main():
     global crashOnHTTPError, logger
     try:
@@ -475,10 +478,14 @@ def main():
                     nowTemp = decodeTemps(hourData)
 
                     break
-                else:
-                    if(getter.getState().handleError() != None):
-                        logger.log(myName, "Handled " + str(getter.getState()) + ", quitting!")
+                
+                # If it isn't an expected state, wait until it is or wait until the error has been handled then quit
+                while(notExpectedState(getter)):
+                    if(getter.getState() == ErrorHandled(model, logger)):
+                        logger.log(myName, "Error state handled, quitting...")
                         exit(1)
+                    
+                    sleep(0.1)
 
                 if(i == 7200):
                     logger.log(myName, "Still waiting for JSON Data. Hasn't been recieved in a long time.")

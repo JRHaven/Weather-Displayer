@@ -475,11 +475,10 @@ def main():
                     nowTemp = decodeTemps(hourData)
 
                     break
-                else:
-                    if(i == 7200):
-                        logger.log(myName, "Still waiting for JSON Data. Hasn't been recieved in a long time.")
-                        print("Weather info hasn't updated in a while. Try restarting the system.\nIf problems presist, check the log.")
-                
+
+                if(i == 7200):
+                    logger.log(myName, "Still waiting for JSON Data. Hasn't been recieved in a long time.")
+                    print("Weather info hasn't updated in a while. Try restarting the system.\nIf problems presist, check the log.")
                 if(i < 7202):
                     i += 1
     except KeyboardInterrupt:

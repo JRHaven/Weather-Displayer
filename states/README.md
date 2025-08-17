@@ -36,3 +36,6 @@ the getter thread and the displayer (main) thread.
   HTTP URL format (e.g. https://subdomain.domain.com)
 * 12 - GetterEnded: Non-fatal state to keep display running when Getter isn't,
   mainly used when a 503 error is detected but crashOnHTTPError is off
+* 13 - ErrorHandled: There was a fatal error that was handled, and now
+  Weather-Displayer should close. Used mostly for threads to handle errors
+  in their own way

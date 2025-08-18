@@ -224,7 +224,7 @@ class Getter():
                             # Tell main that we are now waiting for the next thing, after a second delay
                             sleep(1)
                             self.__setState(Waiting(self.__model, self.__logger))
-                            sleep(20)
+                            sleep(900)
                         else:
                             if(self.__state.getCode() == 7 and self.__model.useTimer):
                                 self.__setState(GetterEnded(self.__model, self.__logger))
